@@ -1,16 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { Sparkles } from "lucide-react";
+import logo from "@/assets/asahdpay-logo.png";
 
 export function SiteNav() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-xl bg-[var(--gradient-primary)] flex items-center justify-center text-primary-foreground shadow-[var(--shadow-glow)]">
-            <Sparkles className="h-4 w-4" />
-          </div>
-          <span className="font-bold text-lg tracking-tight">AsahdPay</span>
+        <Link to="/" className="flex items-center gap-2" aria-label="AsahdPay home">
+          <img src={logo} alt="AsahdPay — School Fee Management System" className="h-10 w-auto object-contain" />
         </Link>
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
           <Link to="/" activeOptions={{ exact: true }} activeProps={{ className: "text-foreground" }} className="hover:text-foreground transition">Home</Link>
@@ -32,12 +29,7 @@ export function SiteFooter() {
     <footer className="border-t border-border/60 bg-muted/30 mt-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-14 grid gap-8 md:grid-cols-4">
         <div>
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-xl bg-[var(--gradient-primary)] flex items-center justify-center text-primary-foreground">
-              <Sparkles className="h-4 w-4" />
-            </div>
-            <span className="font-bold">AsahdPay</span>
-          </div>
+          <img src={logo} alt="AsahdPay" className="h-12 w-auto object-contain" />
           <p className="text-sm text-muted-foreground mt-3">School fee management built for Kenyan schools.</p>
         </div>
         <div>

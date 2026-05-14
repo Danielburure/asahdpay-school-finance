@@ -5,8 +5,9 @@ import {
 } from "@/components/ui/sidebar";
 import {
   LayoutDashboard, Users, CreditCard, FilePlus2, Receipt, MessageSquare,
-  BarChart3, UserCog, ScrollText, Settings, Wallet, LifeBuoy, Sparkles, AlertTriangle, FileSignature
+  BarChart3, UserCog, ScrollText, Settings, Wallet, LifeBuoy, AlertTriangle, FileSignature
 } from "lucide-react";
+import logo from "@/assets/asahdpay-logo.png";
 
 const groups = [
   {
@@ -55,11 +56,8 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader className="border-b border-sidebar-border">
-        <Link to="/" className="flex items-center gap-2 px-1 py-1.5">
-          <div className="h-8 w-8 rounded-xl bg-[var(--gradient-primary)] flex items-center justify-center text-primary-foreground shrink-0 shadow-[var(--shadow-glow)]">
-            <Sparkles className="h-4 w-4" />
-          </div>
-          {!collapsed && <span className="font-bold text-sidebar-foreground">AsahdPay</span>}
+        <Link to="/" className="flex items-center gap-2 px-1 py-1.5" aria-label="AsahdPay home">
+          <img src={logo} alt="AsahdPay" className={collapsed ? "h-8 w-8 object-contain" : "h-10 w-auto object-contain"} />
         </Link>
       </SidebarHeader>
       <SidebarContent>
