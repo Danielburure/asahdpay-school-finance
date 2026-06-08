@@ -23,6 +23,11 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminDashboard() {
+  const schools = useStore((s) => s.schools);
+  const deleteSchool = useStore((s) => s.deleteSchool);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<School | null>(null);
+  const [deleting, setDeleting] = useState<School | null>(null);
   const totalStudents = schools.reduce((a, s) => a + s.students, 0);
   return (
     <div className="min-h-screen bg-muted/30">
