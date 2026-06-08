@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,19 +6,38 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { students } from "@/lib/mock";
 import { KES } from "@/lib/format";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2 } from "lucide-react";
+import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/dashboard/payments/record")({
   component: RecordPayment,
 });
 
 function RecordPayment() {
+  const students = useStore((s) => s.students);
+  const addPayment = useStore((s) => s.addPayment);
+  const navigate = useNavigate();
+
   const [adm, setAdm] = useState("");
-  const student = students.find((s) => s.admission.toLowerCase() === adm.toLowerCase());
+  const [amount, setAmount] = useState("");
+  const [method, setMethod] = useState<"M-Pesa" | "Bank" | "Cash" | "Cheque">("M-Pesa");
+  const [receipt, setReceipt] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [notes, setNotes] = useState("");
+
+  const student = useMemo(() => students.find((s) => s.admission.toLowerCase() === adm.toLowerCase()), [adm, students]);
+
+  const save = (sendSms = false) => {
+    if (!student) { toast.error("Student not found"); return; }
+    const amt = Number(amount);
+    if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
+    addPayment({ admission: adm, amount: amt, method, receiptNo: receipt, notes, date: new Date(date).toISOString() });
+    toast.success(sendSms ? "Payment saved & SMS queued" : "Payment recorded successfully");
+    navigate({ to: "/dashboard/payments" });
+  };
 
   return (
     <div>
@@ -32,11 +51,11 @@ function RecordPayment() {
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <Label>Amount (KES)</Label>
-              <Input type="number" placeholder="0" />
+              <Input type="number" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value)} />
             </div>
             <div>
               <Label>Payment Method</Label>
-              <Select defaultValue="M-Pesa">
+              <Select value={method} onValueChange={(v) => setMethod(v as typeof method)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="M-Pesa">M-Pesa</SelectItem>
@@ -48,21 +67,21 @@ function RecordPayment() {
             </div>
             <div>
               <Label>Receipt Number</Label>
-              <Input placeholder="RCT-10001" />
+              <Input placeholder="auto" value={receipt} onChange={(e) => setReceipt(e.target.value)} />
             </div>
             <div>
               <Label>Payment Date</Label>
-              <Input type="date" defaultValue={new Date().toISOString().slice(0, 10)} />
+              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
           </div>
           <div>
             <Label>Notes</Label>
-            <Textarea rows={3} placeholder="Optional notes for the bursar's records..." />
+            <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional notes for the bursar's records..." />
           </div>
           <div className="flex gap-2 pt-2">
-            <Button onClick={() => toast.success("Payment saved")}>Save Payment</Button>
-            <Button variant="outline" onClick={() => toast.success("Payment saved & SMS queued")}>Save & Send SMS</Button>
-            <Button variant="ghost">Cancel</Button>
+            <Button onClick={() => save(false)}>Save Payment</Button>
+            <Button variant="outline" onClick={() => save(true)}>Save & Send SMS</Button>
+            <Button variant="ghost" onClick={() => navigate({ to: "/dashboard/payments" })}>Cancel</Button>
           </div>
         </Card>
 
