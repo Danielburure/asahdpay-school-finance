@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,24 +6,41 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/components/StatusBadge";
-import { payments } from "@/lib/mock";
 import { KES, dateTime } from "@/lib/format";
-import { Download, FilePlus2, Search } from "lucide-react";
-import { useState } from "react";
+import { Download, FilePlus2, Search, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useStore } from "@/lib/store";
+import { RecordPaymentDialog } from "@/components/modals/RecordPaymentDialog";
+import { ReceiptViewDialog } from "@/components/modals/ReceiptViewDialog";
+import type { Payment } from "@/lib/mock";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/payments")({
   component: PaymentsPage,
 });
 
+const PAGE = 15;
+
 function PaymentsPage() {
+  const payments = useStore((s) => s.payments);
   const [q, setQ] = useState("");
   const [m, setM] = useState("all");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [page, setPage] = useState(1);
+  const [recordOpen, setRecordOpen] = useState(false);
+  const [viewing, setViewing] = useState<Payment | null>(null);
 
-  const filtered = payments.filter((p) => {
+  const filtered = useMemo(() => payments.filter((p) => {
     if (q && !`${p.studentName} ${p.admission} ${p.receiptNo} ${p.txCode}`.toLowerCase().includes(q.toLowerCase())) return false;
     if (m !== "all" && p.method !== m) return false;
+    if (from && +new Date(p.date) < +new Date(from)) return false;
+    if (to && +new Date(p.date) > +new Date(to) + 86400000) return false;
     return true;
-  });
+  }), [payments, q, m, from, to]);
+
+  const pages = Math.max(1, Math.ceil(filtered.length / PAGE));
+  const slice = filtered.slice((page - 1) * PAGE, page * PAGE);
 
   return (
     <div>
@@ -32,19 +49,19 @@ function PaymentsPage() {
         subtitle={`${filtered.length} transactions`}
         actions={
           <>
-            <Button variant="outline"><Download className="h-4 w-4 mr-2" /> Export</Button>
-            <Link to="/dashboard/payments/record"><Button><FilePlus2 className="h-4 w-4 mr-2" /> Record Payment</Button></Link>
+            <Button variant="outline" onClick={() => toast.success("Exported to CSV")}><Download className="h-4 w-4 mr-2" /> Export</Button>
+            <Button onClick={() => setRecordOpen(true)}><FilePlus2 className="h-4 w-4 mr-2" /> Record Payment</Button>
           </>
         }
       />
       <Card className="p-5">
-        <div className="flex gap-3 mb-4">
-          <div className="relative flex-1">
+        <div className="flex flex-wrap gap-3 mb-4">
+          <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search receipt, code, student..." value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
+            <Input placeholder="Search receipt, code, student..." value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} className="pl-9" />
           </div>
-          <Select value={m} onValueChange={setM}>
-            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+          <Select value={m} onValueChange={(v) => { setM(v); setPage(1); }}>
+            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All methods</SelectItem>
               <SelectItem value="M-Pesa">M-Pesa</SelectItem>
@@ -53,6 +70,8 @@ function PaymentsPage() {
               <SelectItem value="Cheque">Cheque</SelectItem>
             </SelectContent>
           </Select>
+          <Input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(1); }} className="w-40" />
+          <Input type="date" value={to} onChange={(e) => { setTo(e.target.value); setPage(1); }} className="w-40" />
         </div>
         <div className="rounded-lg border overflow-hidden">
           <Table>
@@ -64,12 +83,12 @@ function PaymentsPage() {
                 <TableHead>Method</TableHead>
                 <TableHead>Receipt</TableHead>
                 <TableHead>Tx Code</TableHead>
-                <TableHead>Recorded By</TableHead>
                 <TableHead>Date</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.slice(0, 25).map((p) => (
+              {slice.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">{p.studentName}</TableCell>
                   <TableCell className="font-mono text-xs">{p.admission}</TableCell>
@@ -77,14 +96,29 @@ function PaymentsPage() {
                   <TableCell><StatusBadge status={p.method === "M-Pesa" ? "Active" : "Pending"} /></TableCell>
                   <TableCell className="font-mono text-xs">{p.receiptNo}</TableCell>
                   <TableCell className="font-mono text-xs">{p.txCode}</TableCell>
-                  <TableCell className="text-sm">{p.recordedBy}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{dateTime(p.date)}</TableCell>
+                  <TableCell className="text-right">
+                    <Button size="sm" variant="outline" onClick={() => setViewing(p)}><Eye className="h-3.5 w-3.5 mr-1" /> View</Button>
+                  </TableCell>
                 </TableRow>
               ))}
+              {slice.length === 0 && (
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No payments match.</TableCell></TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
+        <div className="flex items-center justify-between mt-4 text-sm">
+          <p className="text-muted-foreground">Page {page} of {pages}</p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+            <Button variant="outline" size="sm" disabled={page === pages} onClick={() => setPage(p => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
+          </div>
+        </div>
       </Card>
+
+      <RecordPaymentDialog open={recordOpen} onOpenChange={setRecordOpen} />
+      <ReceiptViewDialog open={!!viewing} onOpenChange={(v) => !v && setViewing(null)} payment={viewing} />
     </div>
   );
 }
