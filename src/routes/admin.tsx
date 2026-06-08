@@ -96,7 +96,7 @@ function AdminDashboard() {
         <Card className="mt-6 p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold">Schools</h3>
-            <Button>Add School</Button>
+            <Button onClick={() => { setEditing(null); setFormOpen(true); }}>Add School</Button>
           </div>
           <Table>
             <TableHeader className="bg-muted/40">
@@ -117,9 +117,9 @@ function AdminDashboard() {
                   <TableCell>{num(s.students)}</TableCell>
                   <TableCell><StatusBadge status={s.status} /></TableCell>
                   <TableCell><StatusBadge status={s.subscription} /></TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button variant="outline" size="sm">View</Button>
-                    <Button variant="outline" size="sm">Manage</Button>
+                  <TableCell className="text-right space-x-1">
+                    <Button variant="ghost" size="icon" onClick={() => { setEditing(s); setFormOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => setDeleting(s)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -127,6 +127,16 @@ function AdminDashboard() {
           </Table>
         </Card>
       </main>
+
+      <SchoolFormDialog open={formOpen} onOpenChange={setFormOpen} school={editing} />
+      <ConfirmDeleteDialog
+        open={!!deleting}
+        onOpenChange={(v) => !v && setDeleting(null)}
+        title="Remove school?"
+        description={deleting ? `${deleting.name} will be removed.` : ""}
+        onConfirm={() => { if (deleting) { deleteSchool(deleting.id); toast.success("School removed"); setDeleting(null); } }}
+      />
     </div>
   );
 }
+
