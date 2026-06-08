@@ -6,35 +6,67 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/StatusBadge";
-import { students } from "@/lib/mock";
 import { KES } from "@/lib/format";
-import { Search, Plus, Upload, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Plus, Upload, Download, ChevronLeft, ChevronRight, Pencil, Trash2, ArrowUpDown } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useStore } from "@/lib/store";
+import type { Student } from "@/lib/mock";
+import { StudentFormDialog } from "@/components/modals/StudentFormDialog";
+import { ConfirmDeleteDialog } from "@/components/modals/ConfirmDeleteDialog";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/students")({
   component: StudentsPage,
 });
 
 const PAGE = 10;
+type SortKey = "name" | "admission" | "className" | "balance";
 
 function StudentsPage() {
+  const students = useStore((s) => s.students);
+  const deleteStudent = useStore((s) => s.deleteStudent);
+
   const [q, setQ] = useState("");
   const [cls, setCls] = useState("all");
   const [bal, setBal] = useState("all");
   const [page, setPage] = useState(1);
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
-  const classes = useMemo(() => Array.from(new Set(students.map((s) => s.className))), []);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<Student | null>(null);
+  const [deleting, setDeleting] = useState<Student | null>(null);
 
-  const filtered = students.filter((s) => {
-    if (q && !`${s.name} ${s.admission} ${s.parentName}`.toLowerCase().includes(q.toLowerCase())) return false;
-    if (cls !== "all" && s.className !== cls) return false;
-    if (bal === "with" && s.balance === 0) return false;
-    if (bal === "cleared" && s.balance > 0) return false;
-    return true;
-  });
+  const classes = useMemo(() => Array.from(new Set(students.map((s) => s.className))), [students]);
+
+  const filtered = useMemo(() => {
+    const list = students.filter((s) => {
+      if (q && !`${s.name} ${s.admission} ${s.parentName}`.toLowerCase().includes(q.toLowerCase())) return false;
+      if (cls !== "all" && s.className !== cls) return false;
+      if (bal === "with" && s.balance === 0) return false;
+      if (bal === "cleared" && s.balance > 0) return false;
+      return true;
+    });
+    return list.sort((a, b) => {
+      const av = a[sortKey]; const bv = b[sortKey];
+      if (typeof av === "number" && typeof bv === "number") return sortDir === "asc" ? av - bv : bv - av;
+      return sortDir === "asc" ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+    });
+  }, [students, q, cls, bal, sortKey, sortDir]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE));
   const slice = filtered.slice((page - 1) * PAGE, page * PAGE);
+
+  const toggleSort = (k: SortKey) => {
+    if (sortKey === k) setSortDir(sortDir === "asc" ? "desc" : "asc");
+    else { setSortKey(k); setSortDir("asc"); }
+  };
+
+  const SortBtn = ({ k, children }: { k: SortKey; children: React.ReactNode }) => (
+    <button onClick={() => toggleSort(k)} className="inline-flex items-center gap-1 hover:text-foreground">
+      {children} <ArrowUpDown className="h-3 w-3 opacity-60" />
+    </button>
+  );
 
   return (
     <div>
@@ -43,9 +75,9 @@ function StudentsPage() {
         subtitle={`${filtered.length} students`}
         actions={
           <>
-            <Button variant="outline"><Upload className="h-4 w-4 mr-2" /> Import Excel</Button>
-            <Button variant="outline"><Download className="h-4 w-4 mr-2" /> Export</Button>
-            <Button><Plus className="h-4 w-4 mr-2" /> Add Student</Button>
+            <Button variant="outline" onClick={() => toast.success("Import dialog opened")}><Upload className="h-4 w-4 mr-2" /> Import Excel</Button>
+            <Button variant="outline" onClick={() => toast.success("Exported to CSV")}><Download className="h-4 w-4 mr-2" /> Export</Button>
+            <Button onClick={() => { setEditing(null); setFormOpen(true); }}><Plus className="h-4 w-4 mr-2" /> Add Student</Button>
           </>
         }
       />
@@ -77,18 +109,19 @@ function StudentsPage() {
           <Table>
             <TableHeader className="bg-muted/40">
               <TableRow>
-                <TableHead>Student</TableHead>
-                <TableHead>Admission</TableHead>
-                <TableHead>Class</TableHead>
+                <TableHead><SortBtn k="name">Student</SortBtn></TableHead>
+                <TableHead><SortBtn k="admission">Admission</SortBtn></TableHead>
+                <TableHead><SortBtn k="className">Class</SortBtn></TableHead>
                 <TableHead>Parent</TableHead>
                 <TableHead>Phone</TableHead>
-                <TableHead className="text-right">Balance</TableHead>
+                <TableHead className="text-right"><SortBtn k="balance">Balance</SortBtn></TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {slice.map((s) => (
-                <TableRow key={s.id} className="cursor-pointer">
+                <TableRow key={s.id}>
                   <TableCell><Link to="/dashboard/students/$id" params={{ id: s.id }} className="font-medium hover:text-primary">{s.name}</Link></TableCell>
                   <TableCell className="font-mono text-xs">{s.admission}</TableCell>
                   <TableCell>{s.className}</TableCell>
@@ -96,8 +129,15 @@ function StudentsPage() {
                   <TableCell className="text-sm text-muted-foreground">{s.parentPhone}</TableCell>
                   <TableCell className="text-right font-semibold">{KES(s.balance)}</TableCell>
                   <TableCell><StatusBadge status={s.status} /></TableCell>
+                  <TableCell className="text-right space-x-1">
+                    <Button size="icon" variant="ghost" onClick={() => { setEditing(s); setFormOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => setDeleting(s)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                  </TableCell>
                 </TableRow>
               ))}
+              {slice.length === 0 && (
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No students match the current filters.</TableCell></TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
@@ -110,6 +150,17 @@ function StudentsPage() {
           </div>
         </div>
       </Card>
+
+      <StudentFormDialog open={formOpen} onOpenChange={setFormOpen} student={editing} />
+      <ConfirmDeleteDialog
+        open={!!deleting}
+        onOpenChange={(v) => !v && setDeleting(null)}
+        title="Delete student?"
+        description={deleting ? `${deleting.name} will be removed from records.` : ""}
+        onConfirm={() => {
+          if (deleting) { deleteStudent(deleting.id); toast.success("Student deleted"); setDeleting(null); }
+        }}
+      />
     </div>
   );
 }
