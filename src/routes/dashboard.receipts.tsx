@@ -3,21 +3,59 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { payments } from "@/lib/mock";
+import { Input } from "@/components/ui/input";
 import { KES, dateShort } from "@/lib/format";
-import { Download, Printer, MessageSquare, Eye } from "lucide-react";
+import { Download, Printer, MessageSquare, Eye, Search } from "lucide-react";
 import { toast } from "sonner";
+import { useMemo, useState } from "react";
+import { useStore } from "@/lib/store";
+import { ReceiptViewDialog } from "@/components/modals/ReceiptViewDialog";
+import type { Payment } from "@/lib/mock";
 
 export const Route = createFileRoute("/dashboard/receipts")({
   component: Receipts,
 });
 
 function Receipts() {
+  const payments = useStore((s) => s.payments);
+  const [q, setQ] = useState("");
+  const [viewing, setViewing] = useState<Payment | null>(null);
+
+  const filtered = useMemo(
+    () => payments.filter((p) => !q || `${p.studentName} ${p.admission} ${p.receiptNo}`.toLowerCase().includes(q.toLowerCase())),
+    [payments, q],
+  );
+
+  const printOne = (p: Payment) => {
+    const html = `<!doctype html><html><head><title>${p.receiptNo}</title>
+    <style>body{font-family:system-ui;padding:40px;max-width:480px;margin:auto}
+    h1{text-align:center;margin:0}.muted{color:#666;font-size:12px}
+    .row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed #eee}
+    .amt{font-size:28px;font-weight:bold;text-align:right;margin-top:16px}
+    .center{text-align:center}hr{border:none;border-top:1px solid #ddd;margin:16px 0}</style></head>
+    <body><div class="center"><h1>Mang'u High School</h1><p class="muted">P.O. Box 1, Thika · Paybill 522533</p>
+    <p class="muted">OFFICIAL RECEIPT</p><h2 style="font-family:monospace">${p.receiptNo}</h2></div><hr/>
+    <div class="row"><span>Student</span><b>${p.studentName}</b></div>
+    <div class="row"><span>Admission</span><b>${p.admission}</b></div>
+    <div class="row"><span>Class</span><b>${p.className}</b></div>
+    <div class="row"><span>Date</span><b>${dateShort(p.date)}</b></div>
+    <div class="row"><span>Method</span><b>${p.method}</b></div>
+    <div class="row"><span>Tx Code</span><b>${p.txCode}</b></div>
+    <div class="amt">${KES(p.amount)}</div>
+    <script>window.onload=()=>{window.print();setTimeout(()=>window.close(),300)}</script></body></html>`;
+    const w = window.open("", "_blank", "width=520,height=720");
+    if (w) { w.document.write(html); w.document.close(); }
+    else toast.error("Pop-up blocked");
+  };
+
   return (
     <div>
-      <PageHeader title="Receipts" subtitle="View, download, print or resend any receipt" />
+      <PageHeader title="Receipts" subtitle="View, print or resend any receipt" />
       <Card className="p-5">
+        <div className="relative mb-4 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search receipts..." value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
+        </div>
         <Table>
           <TableHeader className="bg-muted/40">
             <TableRow>
@@ -30,7 +68,7 @@ function Receipts() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {payments.slice(0, 20).map((p) => (
+            {filtered.slice(0, 30).map((p) => (
               <TableRow key={p.id}>
                 <TableCell className="font-mono text-xs">{p.receiptNo}</TableCell>
                 <TableCell>{p.studentName}<div className="text-xs text-muted-foreground">{p.admission}</div></TableCell>
@@ -38,54 +76,18 @@ function Receipts() {
                 <TableCell>{p.method}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{dateShort(p.date)}</TableCell>
                 <TableCell className="text-right space-x-1">
-                  <Dialog>
-                    <DialogTrigger asChild><Button size="sm" variant="outline"><Eye className="h-3 w-3" /></Button></DialogTrigger>
-                    <DialogContent className="max-w-md">
-                      <DialogHeader><DialogTitle>Official Receipt</DialogTitle></DialogHeader>
-                      <ReceiptCard p={p} />
-                    </DialogContent>
-                  </Dialog>
-                  <Button size="sm" variant="outline" onClick={() => toast.success("PDF downloaded")}><Download className="h-3 w-3" /></Button>
-                  <Button size="sm" variant="outline" onClick={() => toast.success("Sending to printer")}><Printer className="h-3 w-3" /></Button>
-                  <Button size="sm" variant="outline" onClick={() => toast.success("SMS resent")}><MessageSquare className="h-3 w-3" /></Button>
+                  <Button size="sm" variant="outline" onClick={() => setViewing(p)}><Eye className="h-3.5 w-3.5" /></Button>
+                  <Button size="sm" variant="outline" onClick={() => toast.success("PDF downloaded")}><Download className="h-3.5 w-3.5" /></Button>
+                  <Button size="sm" variant="outline" onClick={() => printOne(p)}><Printer className="h-3.5 w-3.5" /></Button>
+                  <Button size="sm" variant="outline" onClick={() => toast.success("SMS resent")}><MessageSquare className="h-3.5 w-3.5" /></Button>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </Card>
-    </div>
-  );
-}
 
-function ReceiptCard({ p }: { p: typeof payments[number] }) {
-  return (
-    <div className="rounded-lg border-2 border-dashed p-5 bg-card">
-      <div className="text-center border-b pb-3">
-        <div className="font-bold text-lg">Mang'u High School</div>
-        <div className="text-xs text-muted-foreground">P.O. Box 1, Thika · Paybill 522533</div>
-      </div>
-      <div className="text-center my-3">
-        <div className="text-xs text-muted-foreground">OFFICIAL RECEIPT</div>
-        <div className="font-mono font-bold">{p.receiptNo}</div>
-      </div>
-      <div className="space-y-1.5 text-sm">
-        <Row k="Student" v={p.studentName} />
-        <Row k="Admission" v={p.admission} />
-        <Row k="Class" v={p.className} />
-        <Row k="Date" v={dateShort(p.date)} />
-        <Row k="Method" v={p.method} />
-        <Row k="Tx Code" v={p.txCode} />
-        <Row k="Recorded By" v={p.recordedBy} />
-      </div>
-      <div className="mt-4 pt-3 border-t flex justify-between items-center">
-        <span className="text-sm text-muted-foreground">Amount Paid</span>
-        <span className="text-2xl font-bold">{KES(p.amount)}</span>
-      </div>
-      <p className="text-[10px] text-muted-foreground text-center mt-3">Thank you for your payment.</p>
+      <ReceiptViewDialog open={!!viewing} onOpenChange={(v) => !v && setViewing(null)} payment={viewing} />
     </div>
   );
-}
-function Row({ k, v }: { k: string; v: string }) {
-  return <div className="flex justify-between"><span className="text-muted-foreground">{k}</span><span className="font-medium">{v}</span></div>;
 }

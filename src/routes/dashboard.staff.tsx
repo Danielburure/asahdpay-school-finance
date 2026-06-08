@@ -5,21 +5,32 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/StatusBadge";
-import { staffList } from "@/lib/mock";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Pencil, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { useStore, type Staff } from "@/lib/store";
+import { StaffFormDialog } from "@/components/modals/StaffFormDialog";
+import { ConfirmDeleteDialog } from "@/components/modals/ConfirmDeleteDialog";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/staff")({
-  component: Staff,
+  component: StaffPage,
 });
 
-function Staff() {
+function StaffPage() {
+  const staff = useStore((s) => s.staff);
+  const updateStaff = useStore((s) => s.updateStaff);
+  const deleteStaff = useStore((s) => s.deleteStaff);
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<Staff | null>(null);
+  const [deleting, setDeleting] = useState<Staff | null>(null);
+
   return (
     <div>
       <PageHeader
         title="Staff"
         subtitle="Manage roles and permissions"
-        actions={<Button onClick={() => toast.success("Invite sent")}><UserPlus className="h-4 w-4 mr-2" /> Invite Staff</Button>}
+        actions={<Button onClick={() => { setEditing(null); setFormOpen(true); }}><UserPlus className="h-4 w-4 mr-2" /> Add Staff</Button>}
       />
       <Card className="p-5">
         <Table>
@@ -34,7 +45,7 @@ function Staff() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {staffList.map((s) => (
+            {staff.map((s) => (
               <TableRow key={s.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
@@ -46,15 +57,28 @@ function Staff() {
                 <TableCell>{s.role}</TableCell>
                 <TableCell><StatusBadge status={s.status} /></TableCell>
                 <TableCell className="text-sm text-muted-foreground">{s.lastLogin}</TableCell>
-                <TableCell className="text-right space-x-2">
-                  <Button size="sm" variant="outline" onClick={() => toast.success("Role updated")}>Change Role</Button>
-                  <Button size="sm" variant="outline" onClick={() => toast.success("Account toggled")}>Disable</Button>
+                <TableCell className="text-right space-x-1">
+                  <Button size="icon" variant="ghost" onClick={() => { setEditing(s); setFormOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
+                  <Button size="sm" variant="outline" onClick={() => {
+                    updateStaff(s.id, { status: s.status === "Active" ? "Disabled" : "Active" });
+                    toast.success(`Staff ${s.status === "Active" ? "disabled" : "enabled"}`);
+                  }}>{s.status === "Active" ? "Disable" : "Enable"}</Button>
+                  <Button size="icon" variant="ghost" onClick={() => setDeleting(s)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </Card>
+
+      <StaffFormDialog open={formOpen} onOpenChange={setFormOpen} staff={editing} />
+      <ConfirmDeleteDialog
+        open={!!deleting}
+        onOpenChange={(v) => !v && setDeleting(null)}
+        title="Remove staff member?"
+        description={deleting ? `${deleting.name} will lose access.` : ""}
+        onConfirm={() => { if (deleting) { deleteStaff(deleting.id); toast.success("Staff removed"); setDeleting(null); } }}
+      />
     </div>
   );
 }

@@ -5,9 +5,14 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { schools, collectionsByDay } from "@/lib/mock";
+import { collectionsByDay } from "@/lib/mock";
+import { useStore, type School } from "@/lib/store";
 import { KES, num } from "@/lib/format";
-import { Building2, Users, Banknote, AlertTriangle, MessageSquare, Activity, ArrowLeft, Sparkles } from "lucide-react";
+import { Building2, Users, Banknote, AlertTriangle, MessageSquare, Activity, ArrowLeft, Sparkles, Pencil, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { SchoolFormDialog } from "@/components/modals/SchoolFormDialog";
+import { ConfirmDeleteDialog } from "@/components/modals/ConfirmDeleteDialog";
+import { toast } from "sonner";
 import {
   AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid,
 } from "recharts";
@@ -18,6 +23,11 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminDashboard() {
+  const schools = useStore((s) => s.schools);
+  const deleteSchool = useStore((s) => s.deleteSchool);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<School | null>(null);
+  const [deleting, setDeleting] = useState<School | null>(null);
   const totalStudents = schools.reduce((a, s) => a + s.students, 0);
   return (
     <div className="min-h-screen bg-muted/30">
@@ -86,7 +96,7 @@ function AdminDashboard() {
         <Card className="mt-6 p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold">Schools</h3>
-            <Button>Add School</Button>
+            <Button onClick={() => { setEditing(null); setFormOpen(true); }}>Add School</Button>
           </div>
           <Table>
             <TableHeader className="bg-muted/40">
@@ -107,9 +117,9 @@ function AdminDashboard() {
                   <TableCell>{num(s.students)}</TableCell>
                   <TableCell><StatusBadge status={s.status} /></TableCell>
                   <TableCell><StatusBadge status={s.subscription} /></TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button variant="outline" size="sm">View</Button>
-                    <Button variant="outline" size="sm">Manage</Button>
+                  <TableCell className="text-right space-x-1">
+                    <Button variant="ghost" size="icon" onClick={() => { setEditing(s); setFormOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => setDeleting(s)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -117,6 +127,16 @@ function AdminDashboard() {
           </Table>
         </Card>
       </main>
+
+      <SchoolFormDialog open={formOpen} onOpenChange={setFormOpen} school={editing} />
+      <ConfirmDeleteDialog
+        open={!!deleting}
+        onOpenChange={(v) => !v && setDeleting(null)}
+        title="Remove school?"
+        description={deleting ? `${deleting.name} will be removed.` : ""}
+        onConfirm={() => { if (deleting) { deleteSchool(deleting.id); toast.success("School removed"); setDeleting(null); } }}
+      />
     </div>
   );
 }
+

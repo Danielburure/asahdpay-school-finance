@@ -8,7 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   Banknote, Wallet, AlertTriangle, Users, TrendingUp, ArrowRight, Activity, Calendar
 } from "lucide-react";
-import { totals, payments, students, collectionsByDay, classCollections, methodBreakdown } from "@/lib/mock";
+import { collectionsByDay, classCollections, methodBreakdown } from "@/lib/mock";
+import { useStore, useTotals } from "@/lib/store";
+import { useState } from "react";
+import { RecordPaymentDialog } from "@/components/modals/RecordPaymentDialog";
 import { KES, dateTime } from "@/lib/format";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer,
@@ -22,6 +25,10 @@ export const Route = createFileRoute("/dashboard/")({
 const chartColors = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-4)", "var(--color-chart-5)"];
 
 function DashboardHome() {
+  const students = useStore((s) => s.students);
+  const payments = useStore((s) => s.payments);
+  const totals = useTotals();
+  const [recordOpen, setRecordOpen] = useState(false);
   const overdue = students.filter((s) => s.status === "Overdue").slice(0, 6);
   const recent = payments.slice(0, 6);
 
@@ -33,17 +40,18 @@ function DashboardHome() {
         actions={
           <>
             <Button variant="outline"><Calendar className="h-4 w-4 mr-2" /> Term 2, 2025</Button>
-            <Link to="/dashboard/payments/record"><Button>Record Payment</Button></Link>
+            <Button onClick={() => setRecordOpen(true)}>Record Payment</Button>
           </>
         }
       />
+      <RecordPaymentDialog open={recordOpen} onOpenChange={setRecordOpen} />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard label="Total Expected Fees" value={KES(totals.expected)} icon={Wallet} />
         <StatCard label="Total Collected" value={KES(totals.collected)} delta="+18.4% vs last term" trend="up" icon={Banknote} accent="success" />
         <StatCard label="Outstanding" value={KES(totals.outstanding)} delta="-4.2% vs last week" trend="down" icon={AlertTriangle} accent="destructive" />
-        <StatCard label="Students with Balance" value={`${totals.studentsWithBalance}`} icon={Users} accent="warning" />
-        <StatCard label="Today's Collections" value={KES(totals.todayCollections)} delta="+KES 12,500 in last hr" icon={TrendingUp} accent="success" />
+        <StatCard label="Students" value={`${totals.studentCount}`} icon={Users} accent="warning" />
+        <StatCard label="Today's Collections" value={KES(totals.todayCollections)} delta="updated live" icon={TrendingUp} accent="success" />
         <StatCard label="Unmatched Payments" value={`${totals.unmatched}`} delta="needs review" trend="neutral" icon={Activity} accent="warning" />
       </div>
 

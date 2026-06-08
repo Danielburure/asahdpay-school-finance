@@ -1,0 +1,114 @@
+import { useMemo, useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { useStore } from "@/lib/store";
+import { KES } from "@/lib/format";
+import { CheckCircle2 } from "lucide-react";
+
+type Props = {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  defaultAdmission?: string;
+};
+
+export function RecordPaymentDialog({ open, onOpenChange, defaultAdmission }: Props) {
+  const students = useStore((s) => s.students);
+  const addPayment = useStore((s) => s.addPayment);
+
+  const [admission, setAdmission] = useState(defaultAdmission ?? "");
+  const [amount, setAmount] = useState("");
+  const [method, setMethod] = useState<"M-Pesa" | "Bank" | "Cash" | "Cheque">("M-Pesa");
+  const [receipt, setReceipt] = useState("");
+  const [notes, setNotes] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const student = useMemo(
+    () => students.find((s) => s.admission.toLowerCase() === admission.toLowerCase()),
+    [admission, students],
+  );
+
+  const reset = () => {
+    setAdmission(defaultAdmission ?? "");
+    setAmount(""); setMethod("M-Pesa"); setReceipt(""); setNotes(""); setErrors({});
+  };
+
+  const submit = () => {
+    const e: Record<string, string> = {};
+    if (!admission.trim()) e.admission = "Required";
+    else if (!student) e.admission = "Student not found";
+    const amt = Number(amount);
+    if (!amount || isNaN(amt) || amt <= 0) e.amount = "Enter a valid amount";
+    setErrors(e);
+    if (Object.keys(e).length > 0) return;
+
+    const payment = addPayment({ admission, amount: amt, method, receiptNo: receipt });
+    if (!payment) { toast.error("Student not found"); return; }
+    toast.success("Payment recorded successfully");
+    reset();
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Record Payment</DialogTitle>
+          <DialogDescription>Manually log a payment from any channel.</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-2">
+          <div>
+            <Label>Admission Number *</Label>
+            <Input value={admission} onChange={(e) => setAdmission(e.target.value)} placeholder="ADM2024001" />
+            {errors.admission && <p className="text-xs text-destructive mt-1">{errors.admission}</p>}
+            {student && (
+              <div className="mt-2 flex items-center gap-2 text-success text-xs">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {student.name} · {student.className} · Balance {KES(student.balance)}
+              </div>
+            )}
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div>
+              <Label>Amount (KES) *</Label>
+              <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" />
+              {errors.amount && <p className="text-xs text-destructive mt-1">{errors.amount}</p>}
+            </div>
+            <div>
+              <Label>Payment Method</Label>
+              <Select value={method} onValueChange={(v) => setMethod(v as typeof method)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="M-Pesa">M-Pesa</SelectItem>
+                  <SelectItem value="Bank">Bank</SelectItem>
+                  <SelectItem value="Cash">Cash</SelectItem>
+                  <SelectItem value="Cheque">Cheque</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Receipt Number</Label>
+              <Input value={receipt} onChange={(e) => setReceipt(e.target.value)} placeholder="auto" />
+            </div>
+            <div>
+              <Label>Date</Label>
+              <Input type="date" defaultValue={new Date().toISOString().slice(0, 10)} />
+            </div>
+          </div>
+          <div>
+            <Label>Notes</Label>
+            <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={submit}>Save Payment</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
