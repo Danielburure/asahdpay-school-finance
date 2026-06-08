@@ -5,9 +5,14 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { schools, collectionsByDay } from "@/lib/mock";
+import { collectionsByDay } from "@/lib/mock";
+import { useStore, type School } from "@/lib/store";
 import { KES, num } from "@/lib/format";
-import { Building2, Users, Banknote, AlertTriangle, MessageSquare, Activity, ArrowLeft, Sparkles } from "lucide-react";
+import { Building2, Users, Banknote, AlertTriangle, MessageSquare, Activity, ArrowLeft, Sparkles, Pencil, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { SchoolFormDialog } from "@/components/modals/SchoolFormDialog";
+import { ConfirmDeleteDialog } from "@/components/modals/ConfirmDeleteDialog";
+import { toast } from "sonner";
 import {
   AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid,
 } from "recharts";
