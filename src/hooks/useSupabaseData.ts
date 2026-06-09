@@ -1,5 +1,5 @@
 // src/hooks/useSupabaseData.ts
-// Loads real Supabase data into the Zustand store on mount
+// Loads real Supabase data into the Zustand store — CLIENT SIDE ONLY
 
 import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store";
@@ -18,16 +18,22 @@ export function useSupabaseData() {
   const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
+    // Guard: only run in browser, never during SSR
+    if (typeof window === "undefined") return;
+
     let cancelled = false;
 
     async function load() {
       setStatus("loading");
       try {
-        const [id, prof] = await Promise.all([getMySchoolId(), getMyProfile()]);
+        const [id, prof] = await Promise.all([
+          getMySchoolId(),
+          getMyProfile(),
+        ]);
 
         if (cancelled) return;
 
-        // No school means not logged in or not set up — use mock data
+        // Not logged in or school not set up — keep mock data, show dashboard anyway
         if (!id) {
           setStatus("loaded");
           return;
@@ -43,17 +49,22 @@ export function useSupabaseData() {
 
         if (cancelled) return;
 
-        // Load real data into store, replacing mock seed data
+        // Replace mock data in store with real Supabase data
         useStore.setState({ students, payments });
         setStatus("loaded");
       } catch (err) {
         console.error("[useSupabaseData] failed:", err);
-        if (!cancelled) setStatus("error");
+        if (!cancelled) {
+          // On error, still show dashboard with mock data
+          setStatus("loaded");
+        }
       }
     }
 
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return { status, schoolId, profile };
