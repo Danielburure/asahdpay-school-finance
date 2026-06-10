@@ -1,37 +1,45 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Bell, Search, Moon, Sun, ChevronDown } from "lucide-react";
+import { Bell, Search, Moon, Sun } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useStore } from "@/lib/store";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export function Topbar() {
   const [dark, setDark] = useState(false);
+  const navigate = useNavigate();
+  const school = useStore((s) => s.schoolProfile);
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
   }, [dark]);
 
+  const signOut = async () => {
+    try { await supabase.auth.signOut(); } catch { /* ignore */ }
+    toast.success("Signed out");
+    navigate({ to: "/auth" });
+  };
+
   return (
     <header className="sticky top-0 z-30 h-16 border-b border-border bg-background/80 backdrop-blur flex items-center gap-3 px-4">
       <SidebarTrigger />
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="gap-2 font-semibold">
-            Mang'u High School <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuLabel>Switch school</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem>Mang'u High School</DropdownMenuItem>
-          <DropdownMenuItem>Alliance Girls</DropdownMenuItem>
-          <DropdownMenuItem>Maseno School</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="flex items-center gap-2 px-2">
+        {school.logo ? (
+          <img src={school.logo} alt={school.name} className="h-8 w-8 rounded-md object-cover border" />
+        ) : (
+          <div className="h-8 w-8 rounded-md bg-[var(--gradient-primary)] flex items-center justify-center text-primary-foreground font-bold text-sm">
+            {school.name.charAt(0).toUpperCase()}
+          </div>
+        )}
+        <span className="font-semibold text-sm">{school.name}</span>
+      </div>
 
       <div className="relative ml-2 hidden md:block w-80">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -56,7 +64,7 @@ export function Topbar() {
           <DropdownMenuLabel>Grace Wambui · Bursar</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem>Profile</DropdownMenuItem>
-          <DropdownMenuItem>Sign out</DropdownMenuItem>
+          <DropdownMenuItem onClick={signOut}>Sign out</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </header>
