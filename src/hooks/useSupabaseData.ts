@@ -49,8 +49,13 @@ export function useSupabaseData() {
 
         if (cancelled) return;
 
-        // Replace mock data in store with real Supabase data
-        useStore.setState({ students, payments });
+        // Only replace local data when the database actually has rows.
+        // This prevents wiping locally-entered students/payments when the
+        // backend tables are empty.
+        const patch: { students?: typeof students; payments?: typeof payments } = {};
+        if (students.length > 0) patch.students = students;
+        if (payments.length > 0) patch.payments = payments;
+        if (Object.keys(patch).length > 0) useStore.setState(patch);
         setStatus("loaded");
       } catch (err) {
         console.error("[useSupabaseData] failed:", err);
