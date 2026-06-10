@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -8,12 +9,31 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/dashboard/settings")({
   component: SettingsPage,
 });
 
 function SettingsPage() {
+  const school = useStore((s) => s.schoolProfile);
+  const update = useStore((s) => s.updateSchoolProfile);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleLogo = (file: File | null) => {
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Logo must be under 2MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      update({ logo: reader.result as string });
+      toast.success("Logo updated");
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div>
       <PageHeader title="Settings" subtitle="School profile, integrations and notifications" />
@@ -29,20 +49,53 @@ function SettingsPage() {
 
           <TabsContent value="school" className="mt-6 space-y-4 max-w-2xl">
             <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-2xl bg-[var(--gradient-primary)] flex items-center justify-center text-primary-foreground font-bold text-xl">M</div>
-              <Button variant="outline">Upload Logo</Button>
+              {school.logo ? (
+                <img src={school.logo} alt={school.name} className="h-16 w-16 rounded-2xl object-cover border" />
+              ) : (
+                <div className="h-16 w-16 rounded-2xl bg-[var(--gradient-primary)] flex items-center justify-center text-primary-foreground font-bold text-xl">
+                  {school.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleLogo(e.target.files?.[0] ?? null)}
+              />
+              <Button variant="outline" onClick={() => fileRef.current?.click()}>Upload Logo</Button>
+              {school.logo && (
+                <Button variant="ghost" onClick={() => { update({ logo: "" }); toast.success("Logo removed"); }}>
+                  Remove
+                </Button>
+              )}
             </div>
-            <div><Label>School name</Label><Input defaultValue="Mang'u High School" /></div>
+            <div>
+              <Label>School name</Label>
+              <Input value={school.name} onChange={(e) => update({ name: e.target.value })} />
+            </div>
             <div className="grid sm:grid-cols-2 gap-4">
-              <div><Label>Email</Label><Input defaultValue="bursar@manguhigh.ac.ke" /></div>
-              <div><Label>Phone</Label><Input defaultValue="+254 700 123 456" /></div>
+              <div>
+                <Label>Email</Label>
+                <Input value={school.email} onChange={(e) => update({ email: e.target.value })} />
+              </div>
+              <div>
+                <Label>Phone</Label>
+                <Input value={school.phone} onChange={(e) => update({ phone: e.target.value })} />
+              </div>
             </div>
-            <div><Label>Address</Label><Textarea defaultValue="P.O. Box 1, Thika, Kenya" rows={2} /></div>
-            <Button onClick={() => toast.success("Saved")}>Save</Button>
+            <div>
+              <Label>Address (P.O. Box, town)</Label>
+              <Textarea value={school.address} onChange={(e) => update({ address: e.target.value })} rows={2} />
+            </div>
+            <Button onClick={() => toast.success("School profile saved")}>Save</Button>
           </TabsContent>
 
           <TabsContent value="paybill" className="mt-6 space-y-4 max-w-2xl">
-            <div><Label>Paybill Number</Label><Input defaultValue="522533" /></div>
+            <div>
+              <Label>Paybill Number</Label>
+              <Input value={school.paybill} onChange={(e) => update({ paybill: e.target.value })} />
+            </div>
             <div><Label>Account Format</Label><Input defaultValue="ADMNO" /></div>
             <div className="flex items-center justify-between rounded-lg border p-3">
               <span className="text-sm">Auto-reconcile incoming M-Pesa</span>
@@ -52,7 +105,7 @@ function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="sms" className="mt-6 space-y-4 max-w-2xl">
-            <div><Label>SMS Sender ID</Label><Input defaultValue="MANGUHIGH" /></div>
+            <div><Label>SMS Sender ID</Label><Input defaultValue="SCHOOL" /></div>
             <div className="flex items-center justify-between rounded-lg border p-3">
               <span className="text-sm">Auto SMS on payment receipt</span>
               <Switch defaultChecked />

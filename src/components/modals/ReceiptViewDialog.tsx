@@ -4,20 +4,29 @@ import { KES, dateShort } from "@/lib/format";
 import type { Payment } from "@/lib/mock";
 import { Printer, Download } from "lucide-react";
 import { toast } from "sonner";
+import { useStore } from "@/lib/store";
 
 type Props = { open: boolean; onOpenChange: (v: boolean) => void; payment: Payment | null };
 
 export function ReceiptViewDialog({ open, onOpenChange, payment }: Props) {
+  const school = useStore((s) => s.schoolProfile);
   if (!payment) return null;
 
+  const headerLine = [school.address, school.paybill && `Paybill ${school.paybill}`]
+    .filter(Boolean)
+    .join(" · ");
+
   const print = () => {
+    const logoTag = school.logo
+      ? `<img src="${school.logo}" style="height:60px;margin:0 auto 8px;display:block" />`
+      : "";
     const html = `<!doctype html><html><head><title>${payment.receiptNo}</title>
     <style>body{font-family:system-ui;padding:40px;max-width:480px;margin:auto}
     h1{text-align:center;margin:0}.muted{color:#666;font-size:12px}
     .row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed #eee}
     .amt{font-size:28px;font-weight:bold;text-align:right;margin-top:16px}
     .center{text-align:center}hr{border:none;border-top:1px solid #ddd;margin:16px 0}</style></head>
-    <body><div class="center"><h1>Mang'u High School</h1><p class="muted">P.O. Box 1, Thika · Paybill 522533</p>
+    <body><div class="center">${logoTag}<h1>${school.name}</h1><p class="muted">${headerLine}</p>
     <p class="muted">OFFICIAL RECEIPT</p><h2 style="font-family:monospace">${payment.receiptNo}</h2></div><hr/>
     <div class="row"><span>Student</span><b>${payment.studentName}</b></div>
     <div class="row"><span>Admission</span><b>${payment.admission}</b></div>
@@ -43,8 +52,11 @@ export function ReceiptViewDialog({ open, onOpenChange, payment }: Props) {
         </DialogHeader>
         <div className="rounded-lg border-2 border-dashed p-5 bg-card">
           <div className="text-center border-b pb-3">
-            <div className="font-bold text-lg">Mang'u High School</div>
-            <div className="text-xs text-muted-foreground">P.O. Box 1, Thika · Paybill 522533</div>
+            {school.logo && (
+              <img src={school.logo} alt={school.name} className="h-12 mx-auto mb-2 object-contain" />
+            )}
+            <div className="font-bold text-lg">{school.name}</div>
+            {headerLine && <div className="text-xs text-muted-foreground">{headerLine}</div>}
           </div>
           <div className="text-center my-3">
             <div className="text-xs text-muted-foreground">OFFICIAL RECEIPT</div>
