@@ -7,11 +7,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/StatusBadge";
 import { KES } from "@/lib/format";
-import { Search, Plus, Upload, Download, ChevronLeft, ChevronRight, Pencil, Trash2, ArrowUpDown } from "lucide-react";
+import { Search, Plus, Upload, Download, ChevronLeft, ChevronRight, Pencil, Trash2, ArrowUpDown, GraduationCap } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import type { Student } from "@/lib/mock";
 import { StudentFormDialog } from "@/components/modals/StudentFormDialog";
+import { CreateClassesDialog } from "@/components/modals/CreateClassesDialog";
 import { ConfirmDeleteDialog } from "@/components/modals/ConfirmDeleteDialog";
 import { toast } from "sonner";
 
@@ -34,6 +35,7 @@ function StudentsPage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const [formOpen, setFormOpen] = useState(false);
+  const [classesOpen, setClassesOpen] = useState(false);
   const [editing, setEditing] = useState<Student | null>(null);
   const [deleting, setDeleting] = useState<Student | null>(null);
 
@@ -75,6 +77,7 @@ function StudentsPage() {
         subtitle={`${filtered.length} students`}
         actions={
           <>
+            <Button variant="outline" onClick={() => setClassesOpen(true)}><GraduationCap className="h-4 w-4 mr-2" /> Create Classes</Button>
             <Button variant="outline" onClick={() => toast.success("Import dialog opened")}><Upload className="h-4 w-4 mr-2" /> Import Excel</Button>
             <Button variant="outline" onClick={() => toast.success("Exported to CSV")}><Download className="h-4 w-4 mr-2" /> Export</Button>
             <Button onClick={() => { setEditing(null); setFormOpen(true); }}><Plus className="h-4 w-4 mr-2" /> Add Student</Button>
@@ -152,6 +155,7 @@ function StudentsPage() {
       </Card>
 
       <StudentFormDialog open={formOpen} onOpenChange={setFormOpen} student={editing} />
+      <CreateClassesDialog open={classesOpen} onOpenChange={setClassesOpen} />
       <ConfirmDeleteDialog
         open={!!deleting}
         onOpenChange={(v) => !v && setDeleting(null)}

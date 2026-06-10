@@ -16,8 +16,8 @@ export function SiteNav() {
           <Link to="/contact" activeProps={{ className: "text-foreground" }} className="hover:text-foreground transition">Contact</Link>
         </nav>
         <div className="flex items-center gap-2">
-          <Link to="/dashboard"><Button variant="ghost" size="sm">Demo Login</Button></Link>
-          <Link to="/dashboard"><Button size="sm" className="shadow-[var(--shadow-glow)]">Start Demo</Button></Link>
+          <Link to="/auth"><Button variant="ghost" size="sm">Sign In</Button></Link>
+          <Link to="/auth"><Button size="sm" className="shadow-[var(--shadow-glow)]">Create Account</Button></Link>
         </div>
       </div>
     </header>
