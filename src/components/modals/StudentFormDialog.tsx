@@ -8,8 +8,6 @@ import { toast } from "sonner";
 import { useStore } from "@/lib/store";
 import type { Student } from "@/lib/mock";
 
-const classes = ["Form 1A","Form 1B","Form 2A","Form 2B","Form 3A","Form 3B","Form 4A","Form 4B"];
-
 type Props = {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -19,16 +17,16 @@ type Props = {
 export function StudentFormDialog({ open, onOpenChange, student }: Props) {
   const addStudent = useStore((s) => s.addStudent);
   const updateStudent = useStore((s) => s.updateStudent);
+  const classes = useStore((s) => s.classes);
   const editing = !!student;
 
   const [name, setName] = useState(student?.name ?? "");
   const [admission, setAdmission] = useState(student?.admission ?? "");
-  const [className, setClassName] = useState(student?.className ?? "Form 1A");
+  const [className, setClassName] = useState(student?.className ?? "");
   const [parentName, setParentName] = useState(student?.parentName ?? "");
   const [parentPhone, setParentPhone] = useState(student?.parentPhone ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Reset state when dialog opens
   const handleOpenChange = (v: boolean) => {
     if (v && student) {
       setName(student.name);
@@ -37,7 +35,7 @@ export function StudentFormDialog({ open, onOpenChange, student }: Props) {
       setParentName(student.parentName);
       setParentPhone(student.parentPhone);
     } else if (v) {
-      setName(""); setAdmission(""); setClassName("Form 1A"); setParentName(""); setParentPhone("");
+      setName(""); setAdmission(""); setClassName(""); setParentName(""); setParentPhone("");
     }
     setErrors({});
     onOpenChange(v);
@@ -86,12 +84,19 @@ export function StudentFormDialog({ open, onOpenChange, student }: Props) {
             </div>
             <div>
               <Label>Class *</Label>
-              <Select value={className} onValueChange={setClassName}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {classes.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              {classes.length === 0 ? (
+                <div className="text-xs text-muted-foreground border rounded-md p-2">
+                  No classes yet. Close this and click <span className="font-medium">Create Classes</span> first.
+                </div>
+              ) : (
+                <Select value={className} onValueChange={setClassName}>
+                  <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
+                  <SelectContent>
+                    {classes.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+              {errors.className && <p className="text-xs text-destructive mt-1">{errors.className}</p>}
             </div>
           </div>
           <div>
@@ -107,7 +112,7 @@ export function StudentFormDialog({ open, onOpenChange, student }: Props) {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={submit}>{editing ? "Save Changes" : "Add Student"}</Button>
+          <Button onClick={submit} disabled={classes.length === 0}>{editing ? "Save Changes" : "Add Student"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
