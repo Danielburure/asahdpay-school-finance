@@ -32,6 +32,16 @@ export type School = {
   phone?: string;
 };
 
+export type SchoolProfile = {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  paybill: string;
+  logo: string; // data URL
+};
+
+
 type NewStudentInput = {
   name: string;
   admission: string;
@@ -72,6 +82,9 @@ type Store = {
   sms: Sms[];
   schools: School[];
   classes: string[];
+  schoolProfile: SchoolProfile;
+  updateSchoolProfile: (patch: Partial<SchoolProfile>) => void;
+
 
   addClass: (name: string) => void;
   deleteClass: (name: string) => void;
@@ -105,6 +118,18 @@ export const useStore = create<Store>()(
       sms: [],
       schools: [],
       classes: [],
+      schoolProfile: {
+        name: "My School",
+        email: "",
+        phone: "",
+        address: "",
+        paybill: "",
+        logo: "",
+      },
+
+      updateSchoolProfile: (patch) =>
+        set((s) => ({ schoolProfile: { ...s.schoolProfile, ...patch } })),
+
 
       addClass: (name) =>
         set((s) =>
