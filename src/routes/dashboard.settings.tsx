@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useStore } from "@/lib/store";
+import { buildFeeStructureHtml } from "@/components/FeeStructureView";
+import { Printer, Eye } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/settings")({
   component: SettingsPage,
@@ -18,7 +20,20 @@ export const Route = createFileRoute("/dashboard/settings")({
 function SettingsPage() {
   const school = useStore((s) => s.schoolProfile);
   const update = useStore((s) => s.updateSchoolProfile);
+  const classes = useStore((s) => s.classes);
+  const classFees = useStore((s) => s.classFees);
+  const setClassFee = useStore((s) => s.setClassFee);
+  const [draftFees, setDraftFees] = useState<Record<string, string>>({});
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const viewFeeStructure = () => {
+    const html = buildFeeStructureHtml(school, classes, classFees);
+    const w = window.open("", "_blank", "width=900,height=800");
+    if (!w) { toast.error("Pop-up blocked"); return; }
+    w.document.write(html);
+    w.document.close();
+  };
+
 
   const handleLogo = (file: File | null) => {
     if (!file) return;
