@@ -82,6 +82,8 @@ type Store = {
   sms: Sms[];
   schools: School[];
   classes: string[];
+  classFees: Record<string, number>;
+  setClassFee: (name: string, amount: number) => void;
   schoolProfile: SchoolProfile;
   updateSchoolProfile: (patch: Partial<SchoolProfile>) => void;
 
