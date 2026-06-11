@@ -29,9 +29,9 @@ function Contact() {
             <p className="mt-4 text-muted-foreground">Book a demo or ask anything about AsahdPay.</p>
             <div className="mt-8 space-y-4">
               {[
-                { icon: Mail, label: "Email", value: "hello@asahdpay.co.ke" },
-                { icon: Phone, label: "Phone", value: "+254 700 000 000" },
-                { icon: MessageCircle, label: "WhatsApp", value: "+254 700 000 000" },
+                { icon: Mail, label: "Email", value: "asahd010@gmail.com" },
+                { icon: Phone, label: "Phone", value: "+254 720485988" },
+                { icon: MessageCircle, label: "WhatsApp", value: "+254720485988" },
                 { icon: MapPin, label: "Office", value: "Westlands, Nairobi" },
               ].map((c) => (
                 <div key={c.label} className="flex items-center gap-3">

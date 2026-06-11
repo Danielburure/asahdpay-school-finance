@@ -1,68 +1,106 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { useStore } from "@/lib/store";
-import type { Student } from "@/lib/mock";
+import { supabase } from "@/integrations/supabase/client";
 
 type Props = {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  student?: Student | null;
+  student?: any | null;
+  classes: { id: string; name: string }[];
+  schoolId: string | null;
+  onSaved: () => void;
 };
 
-export function StudentFormDialog({ open, onOpenChange, student }: Props) {
-  const addStudent = useStore((s) => s.addStudent);
-  const updateStudent = useStore((s) => s.updateStudent);
-  const classes = useStore((s) => s.classes);
+export function StudentFormDialog({ open, onOpenChange, student, classes, schoolId, onSaved }: Props) {
   const editing = !!student;
-
-  const [name, setName] = useState(student?.name ?? "");
-  const [admission, setAdmission] = useState(student?.admission ?? "");
-  const [className, setClassName] = useState(student?.className ?? "");
-  const [parentName, setParentName] = useState(student?.parentName ?? "");
-  const [parentPhone, setParentPhone] = useState(student?.parentPhone ?? "");
+  const [loading, setLoading] = useState(false);
+  const [name, setName] = useState("");
+  const [admission, setAdmission] = useState("");
+  const [classId, setClassId] = useState("");
+  const [parentName, setParentName] = useState("");
+  const [parentPhone, setParentPhone] = useState("");
+  const [termFee, setTermFee] = useState("45000");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleOpenChange = (v: boolean) => {
-    if (v && student) {
-      setName(student.name);
-      setAdmission(student.admission);
-      setClassName(student.className);
-      setParentName(student.parentName);
-      setParentPhone(student.parentPhone);
-    } else if (v) {
-      setName(""); setAdmission(""); setClassName(""); setParentName(""); setParentPhone("");
+  useEffect(() => {
+    if (open) {
+      setName(student?.full_name ?? "");
+      setAdmission(student?.admission_number ?? "");
+      setClassId(student?.class_id ?? "");
+      setParentName(student?.parent_name ?? "");
+      setParentPhone(student?.parent_phone ?? "");
+      setTermFee(String(student?.term_fee ?? 45000));
+      setErrors({});
     }
-    setErrors({});
-    onOpenChange(v);
-  };
+  }, [open, student]);
 
-  const submit = () => {
+  async function submit() {
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = "Required";
     if (!admission.trim()) e.admission = "Required";
-    if (!className.trim()) e.className = "Required";
+    if (!classId) e.classId = "Required";
     if (!parentName.trim()) e.parentName = "Required";
     if (!parentPhone.trim()) e.parentPhone = "Required";
+    if (!termFee || isNaN(Number(termFee))) e.termFee = "Enter valid amount";
     setErrors(e);
     if (Object.keys(e).length > 0) return;
+    if (!schoolId) return toast.error("School not found");
 
-    if (editing && student) {
-      updateStudent(student.id, { name, admission, className, parentName, parentPhone });
-      toast.success("Student updated");
-    } else {
-      addStudent({ name, admission, className, parentName, parentPhone });
-      toast.success("Student added successfully");
+    setLoading(true);
+    try {
+      if (editing && student) {
+        const { error } = await supabase
+          .from("students")
+          .update({
+            full_name: name,
+            admission_number: admission,
+            class_id: classId,
+            parent_name: parentName,
+            parent_phone: parentPhone,
+            term_fee: Number(termFee),
+          })
+          .eq("id", student.id);
+        if (error) throw error;
+        toast.success("Student updated");
+      } else {
+        const { data: existing } = await supabase
+          .from("students")
+          .select("id")
+          .eq("school_id", schoolId)
+          .eq("admission_number", admission)
+          .maybeSingle();
+        if (existing) throw new Error("Admission number already exists");
+
+        const { error } = await supabase.from("students").insert({
+          school_id: schoolId,
+          full_name: name,
+          admission_number: admission,
+          class_id: classId,
+          parent_name: parentName,
+          parent_phone: parentPhone,
+          term_fee: Number(termFee),
+          total_paid: 0,
+          status: "active",
+        });
+        if (error) throw error;
+        toast.success("Student added successfully");
+      }
+      onSaved();
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(err.message ?? "Something went wrong");
+    } finally {
+      setLoading(false);
     }
-    onOpenChange(false);
-  };
+  }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{editing ? "Edit Student" : "Add Student"}</DialogTitle>
@@ -79,25 +117,30 @@ export function StudentFormDialog({ open, onOpenChange, student }: Props) {
           <div className="grid sm:grid-cols-2 gap-3">
             <div>
               <Label>Admission Number *</Label>
-              <Input value={admission} onChange={(e) => setAdmission(e.target.value)} placeholder="ADM2024999" />
+              <Input value={admission} onChange={(e) => setAdmission(e.target.value)} placeholder="ADM2024999" disabled={editing} />
               {errors.admission && <p className="text-xs text-destructive mt-1">{errors.admission}</p>}
             </div>
             <div>
               <Label>Class *</Label>
               {classes.length === 0 ? (
                 <div className="text-xs text-muted-foreground border rounded-md p-2">
-                  No classes yet. Close this and click <span className="font-medium">Create Classes</span> first.
+                  No classes yet. Click "Create Classes" first.
                 </div>
               ) : (
-                <Select value={className} onValueChange={setClassName}>
+                <Select value={classId} onValueChange={setClassId}>
                   <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
                   <SelectContent>
-                    {classes.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    {classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               )}
-              {errors.className && <p className="text-xs text-destructive mt-1">{errors.className}</p>}
+              {errors.classId && <p className="text-xs text-destructive mt-1">{errors.classId}</p>}
             </div>
+          </div>
+          <div>
+            <Label>Term Fee (KES) *</Label>
+            <Input type="number" value={termFee} onChange={(e) => setTermFee(e.target.value)} placeholder="45000" />
+            {errors.termFee && <p className="text-xs text-destructive mt-1">{errors.termFee}</p>}
           </div>
           <div>
             <Label>Parent Name *</Label>
@@ -112,7 +155,9 @@ export function StudentFormDialog({ open, onOpenChange, student }: Props) {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={submit} disabled={classes.length === 0}>{editing ? "Save Changes" : "Add Student"}</Button>
+          <Button onClick={submit} disabled={loading || classes.length === 0}>
+            {loading ? "Saving..." : editing ? "Save Changes" : "Add Student"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -8,30 +8,47 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StatusBadge } from "@/components/StatusBadge";
 import { KES } from "@/lib/format";
 import { Search, Plus, Upload, Download, ChevronLeft, ChevronRight, Pencil, Trash2, ArrowUpDown, GraduationCap } from "lucide-react";
-import { useMemo, useState } from "react";
-import { useStore } from "@/lib/store";
-import type { Student } from "@/lib/mock";
+import { useMemo, useState, useEffect, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { StudentFormDialog } from "@/components/modals/StudentFormDialog";
 import { CreateClassesDialog } from "@/components/modals/CreateClassesDialog";
 import { ConfirmDeleteDialog } from "@/components/modals/ConfirmDeleteDialog";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
 
 export const Route = createFileRoute("/dashboard/students")({
   component: StudentsPage,
 });
 
 const PAGE = 10;
-type SortKey = "name" | "admission" | "className" | "balance";
+type SortKey = "full_name" | "admission_number" | "className" | "balance";
+
+type Student = {
+  id: string;
+  full_name: string;
+  admission_number: string;
+  className: string;
+  class_id: string | null;
+  parent_name: string | null;
+  parent_phone: string | null;
+  term_fee: number;
+  total_paid: number;
+  balance: number | null;
+  status: string;
+};
 
 function StudentsPage() {
-  const students = useStore((s) => s.students);
-  const deleteStudent = useStore((s) => s.deleteStudent);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [schoolId, setSchoolId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [q, setQ] = useState("");
   const [cls, setCls] = useState("all");
   const [bal, setBal] = useState("all");
   const [page, setPage] = useState(1);
-  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortKey, setSortKey] = useState<SortKey>("full_name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const [formOpen, setFormOpen] = useState(false);
@@ -39,20 +56,139 @@ function StudentsPage() {
   const [editing, setEditing] = useState<Student | null>(null);
   const [deleting, setDeleting] = useState<Student | null>(null);
 
-  const classes = useMemo(() => Array.from(new Set(students.map((s) => s.className))), [students]);
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      try {
+        const { data: staffData } = await supabase
+          .from("staff")
+          .select("school_id")
+          .single();
+        if (!staffData) return;
+        const sid = staffData.school_id;
+        setSchoolId(sid);
+        const { data: classData } = await supabase
+          .from("classes")
+          .select("id, name")
+          .eq("school_id", sid)
+          .order("name");
+        const classList = classData ?? [];
+        setClasses(classList);
+        await loadStudents(sid, classList);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  async function loadStudents(sid: string, classList: { id: string; name: string }[]) {
+    const { data, error } = await supabase
+      .from("students")
+      .select("*")
+      .eq("school_id", sid)
+      .eq("status", "active")
+      .order("full_name");
+    if (error) { toast.error("Failed to load students"); return; }
+    const classMap = Object.fromEntries(classList.map((c) => [c.id, c.name]));
+    setStudents((data ?? []).map((s) => ({
+      ...s,
+      className: s.class_id ? classMap[s.class_id] ?? "—" : "—",
+    })));
+  }
+
+  async function handleDelete() {
+    if (!deleting || !schoolId) return;
+    const { error } = await supabase
+      .from("students")
+      .update({ status: "inactive" })
+      .eq("id", deleting.id);
+    if (error) return toast.error("Failed to delete student");
+    setStudents((prev) => prev.filter((s) => s.id !== deleting.id));
+    toast.success("Student removed");
+    setDeleting(null);
+  }
+
+  async function handleExport() {
+    const rows = filtered.map((s) => ({
+      Name: s.full_name,
+      Admission: s.admission_number,
+      Class: s.className,
+      Parent: s.parent_name ?? "",
+      Phone: s.parent_phone ?? "",
+      "Term Fee": s.term_fee,
+      "Total Paid": s.total_paid,
+      Balance: s.balance ?? 0,
+      Status: s.status,
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Students");
+    XLSX.writeFile(wb, "students.xlsx");
+    toast.success("Exported to Excel");
+  }
+
+  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !schoolId) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+        const wb = XLSX.read(data, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows: any[] = XLSX.utils.sheet_to_json(ws);
+
+        if (rows.length === 0) return toast.error("No data found in file");
+
+        // Find class ids by name
+        const classMap = Object.fromEntries(classes.map((c) => [c.name.toLowerCase(), c.id]));
+
+        const toInsert = rows.map((r) => ({
+          school_id: schoolId,
+          full_name: r["Name"] ?? r["full_name"] ?? "",
+          admission_number: String(r["Admission"] ?? r["admission_number"] ?? ""),
+          class_id: classMap[(r["Class"] ?? r["class"] ?? "").toLowerCase()] ?? null,
+          parent_name: r["Parent"] ?? r["parent_name"] ?? null,
+          parent_phone: String(r["Phone"] ?? r["parent_phone"] ?? ""),
+          term_fee: Number(r["Term Fee"] ?? r["term_fee"] ?? 45000),
+          total_paid: Number(r["Total Paid"] ?? r["total_paid"] ?? 0),
+          status: "active" as const,
+        })).filter((s) => s.full_name && s.admission_number);
+
+        const { error } = await supabase
+          .from("students")
+          .upsert(toInsert, { onConflict: "school_id,admission_number" });
+
+        if (error) throw error;
+        toast.success(`${toInsert.length} students imported`);
+        await loadStudents(schoolId, classes);
+      } catch (err: any) {
+        toast.error(err.message ?? "Import failed");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = "";
+  }
 
   const filtered = useMemo(() => {
     const list = students.filter((s) => {
-      if (q && !`${s.name} ${s.admission} ${s.parentName}`.toLowerCase().includes(q.toLowerCase())) return false;
+      if (q && !`${s.full_name} ${s.admission_number} ${s.parent_name ?? ""}`.toLowerCase().includes(q.toLowerCase())) return false;
       if (cls !== "all" && s.className !== cls) return false;
-      if (bal === "with" && s.balance === 0) return false;
-      if (bal === "cleared" && s.balance > 0) return false;
+      if (bal === "with" && (s.balance ?? 0) === 0) return false;
+      if (bal === "cleared" && (s.balance ?? 0) > 0) return false;
       return true;
     });
     return list.sort((a, b) => {
-      const av = a[sortKey]; const bv = b[sortKey];
-      if (typeof av === "number" && typeof bv === "number") return sortDir === "asc" ? av - bv : bv - av;
-      return sortDir === "asc" ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+      if (sortKey === "balance") {
+        return sortDir === "asc" ? (a.balance ?? 0) - (b.balance ?? 0) : (b.balance ?? 0) - (a.balance ?? 0);
+      }
+      if (sortKey === "className") {
+        return sortDir === "asc" ? a.className.localeCompare(b.className) : b.className.localeCompare(a.className);
+      }
+      const av = String(a[sortKey]); const bv = String(b[sortKey]);
+      return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
     });
   }, [students, q, cls, bal, sortKey, sortDir]);
 
@@ -70,16 +206,24 @@ function StudentsPage() {
     </button>
   );
 
+  const getStatus = (balance: number | null) => {
+    const b = balance ?? 0;
+    if (b === 0) return "Paid";
+    if (b > 30000) return "Overdue";
+    return "Partial";
+  };
+
   return (
     <div>
+      <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleImport} />
       <PageHeader
         title="Students"
         subtitle={`${filtered.length} students`}
         actions={
           <>
             <Button variant="outline" onClick={() => setClassesOpen(true)}><GraduationCap className="h-4 w-4 mr-2" /> Create Classes</Button>
-            <Button variant="outline" onClick={() => toast.success("Import dialog opened")}><Upload className="h-4 w-4 mr-2" /> Import Excel</Button>
-            <Button variant="outline" onClick={() => toast.success("Exported to CSV")}><Download className="h-4 w-4 mr-2" /> Export</Button>
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()}><Upload className="h-4 w-4 mr-2" /> Import Excel</Button>
+            <Button variant="outline" onClick={handleExport}><Download className="h-4 w-4 mr-2" /> Export</Button>
             <Button onClick={() => { setEditing(null); setFormOpen(true); }}><Plus className="h-4 w-4 mr-2" /> Add Student</Button>
           </>
         }
@@ -95,7 +239,7 @@ function StudentsPage() {
             <SelectTrigger className="w-44"><SelectValue placeholder="Class" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All classes</SelectItem>
-              {classes.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              {classes.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={bal} onValueChange={(v) => { setBal(v); setPage(1); }}>
@@ -112,8 +256,8 @@ function StudentsPage() {
           <Table>
             <TableHeader className="bg-muted/40">
               <TableRow>
-                <TableHead><SortBtn k="name">Student</SortBtn></TableHead>
-                <TableHead><SortBtn k="admission">Admission</SortBtn></TableHead>
+                <TableHead><SortBtn k="full_name">Student</SortBtn></TableHead>
+                <TableHead><SortBtn k="admission_number">Admission</SortBtn></TableHead>
                 <TableHead><SortBtn k="className">Class</SortBtn></TableHead>
                 <TableHead>Parent</TableHead>
                 <TableHead>Phone</TableHead>
@@ -123,23 +267,27 @@ function StudentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {slice.map((s) => (
+              {loading ? (
+                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Loading students...</TableCell></TableRow>
+              ) : slice.map((s) => (
                 <TableRow key={s.id}>
-                  <TableCell><Link to="/dashboard/students/$id" params={{ id: s.id }} className="font-medium hover:text-primary">{s.name}</Link></TableCell>
-                  <TableCell className="font-mono text-xs">{s.admission}</TableCell>
+                  <TableCell>
+                    <Link to="/dashboard/students/$id" params={{ id: s.id }} className="font-medium hover:text-primary">{s.full_name}</Link>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">{s.admission_number}</TableCell>
                   <TableCell>{s.className}</TableCell>
-                  <TableCell>{s.parentName}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{s.parentPhone}</TableCell>
-                  <TableCell className="text-right font-semibold">{KES(s.balance)}</TableCell>
-                  <TableCell><StatusBadge status={s.status} /></TableCell>
+                  <TableCell>{s.parent_name}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{s.parent_phone}</TableCell>
+                  <TableCell className="text-right font-semibold">{KES(s.balance ?? 0)}</TableCell>
+                  <TableCell><StatusBadge status={getStatus(s.balance)} /></TableCell>
                   <TableCell className="text-right space-x-1">
                     <Button size="icon" variant="ghost" onClick={() => { setEditing(s); setFormOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
                     <Button size="icon" variant="ghost" onClick={() => setDeleting(s)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
                   </TableCell>
                 </TableRow>
               ))}
-              {slice.length === 0 && (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No students match the current filters.</TableCell></TableRow>
+              {!loading && slice.length === 0 && (
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No students found.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -154,16 +302,26 @@ function StudentsPage() {
         </div>
       </Card>
 
-      <StudentFormDialog open={formOpen} onOpenChange={setFormOpen} student={editing} />
-      <CreateClassesDialog open={classesOpen} onOpenChange={setClassesOpen} />
+      <StudentFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        student={editing}
+        classes={classes}
+        schoolId={schoolId}
+        onSaved={() => schoolId && loadStudents(schoolId, classes)}
+      />
+      <CreateClassesDialog
+        open={classesOpen}
+        onOpenChange={setClassesOpen}
+        schoolId={schoolId}
+        onSaved={(updated) => setClasses(updated)}
+      />
       <ConfirmDeleteDialog
         open={!!deleting}
         onOpenChange={(v) => !v && setDeleting(null)}
         title="Delete student?"
-        description={deleting ? `${deleting.name} will be removed from records.` : ""}
-        onConfirm={() => {
-          if (deleting) { deleteStudent(deleting.id); toast.success("Student deleted"); setDeleting(null); }
-        }}
+        description={deleting ? `${deleting.full_name} will be removed from records.` : ""}
+        onConfirm={handleDelete}
       />
     </div>
   );
