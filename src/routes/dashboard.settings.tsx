@@ -56,11 +56,66 @@ function SettingsPage() {
         <Tabs defaultValue="school">
           <TabsList>
             <TabsTrigger value="school">School</TabsTrigger>
+            <TabsTrigger value="fees">Fees Structure</TabsTrigger>
             <TabsTrigger value="paybill">Paybill</TabsTrigger>
             <TabsTrigger value="sms">SMS</TabsTrigger>
             <TabsTrigger value="term">Academic term</TabsTrigger>
             <TabsTrigger value="notif">Notifications</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="fees" className="mt-6 space-y-4 max-w-2xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">Class Fees</h3>
+                <p className="text-sm text-muted-foreground">Set the fees for each class. Classes come from "Create Classes".</p>
+              </div>
+              <Button onClick={viewFeeStructure} variant="outline">
+                <Eye className="h-4 w-4 mr-1" /> View Fee Structure
+              </Button>
+            </div>
+
+            {classes.length === 0 ? (
+              <div className="rounded-lg border p-6 text-center text-sm text-muted-foreground">
+                No classes yet. Go to Students → Create Classes to add some.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {classes.map((c) => {
+                  const current = draftFees[c] ?? (classFees[c]?.toString() ?? "");
+                  return (
+                    <div key={c} className="flex items-center gap-3 rounded-lg border p-3">
+                      <div className="flex-1 font-medium">{c}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">KES</span>
+                        <Input
+                          type="number"
+                          className="w-40"
+                          placeholder="0"
+                          value={current}
+                          onChange={(e) => setDraftFees({ ...draftFees, [c]: e.target.value })}
+                        />
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            const v = parseFloat(current || "0");
+                            if (isNaN(v) || v < 0) { toast.error("Invalid amount"); return; }
+                            setClassFee(c, v);
+                            toast.success(`Saved fee for ${c}`);
+                          }}
+                        >
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+                <Button onClick={viewFeeStructure} className="mt-2">
+                  <Printer className="h-4 w-4 mr-1" /> View & Print Fee Structure
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+
 
           <TabsContent value="school" className="mt-6 space-y-4 max-w-2xl">
             <div className="flex items-center gap-4">
