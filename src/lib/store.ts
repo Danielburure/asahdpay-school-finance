@@ -82,8 +82,8 @@ type Store = {
   sms: Sms[];
   schools: School[];
   classes: string[];
-  classFees: Record<string, number>;
-  setClassFee: (name: string, amount: number) => void;
+  classFees: Record<string, { term1: number; term2: number; term3: number }>;
+  setClassFee: (name: string, fees: { term1: number; term2: number; term3: number }) => void;
   schoolProfile: SchoolProfile;
   updateSchoolProfile: (patch: Partial<SchoolProfile>) => void;
 
@@ -130,8 +130,8 @@ export const useStore = create<Store>()(
         logo: "",
       },
 
-      setClassFee: (name, amount) =>
-        set((s) => ({ classFees: { ...s.classFees, [name]: amount } })),
+      setClassFee: (name, fees) =>
+        set((s) => ({ classFees: { ...s.classFees, [name]: fees } })),
 
       updateSchoolProfile: (patch) =>
         set((s) => ({ schoolProfile: { ...s.schoolProfile, ...patch } })),
@@ -284,8 +284,8 @@ export const useStore = create<Store>()(
         set((s) => ({ schools: s.schools.filter((sc) => sc.id !== id) })),
     }),
     {
-      name: "asahdpay-store-v2",
-      version: 2,
+      name: "asahdpay-store-v3",
+      version: 3,
     },
   ),
 );
