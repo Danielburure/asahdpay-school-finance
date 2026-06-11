@@ -82,6 +82,8 @@ type Store = {
   sms: Sms[];
   schools: School[];
   classes: string[];
+  classFees: Record<string, number>;
+  setClassFee: (name: string, amount: number) => void;
   schoolProfile: SchoolProfile;
   updateSchoolProfile: (patch: Partial<SchoolProfile>) => void;
 
@@ -118,6 +120,7 @@ export const useStore = create<Store>()(
       sms: [],
       schools: [],
       classes: [],
+      classFees: {},
       schoolProfile: {
         name: "My School",
         email: "",
@@ -126,6 +129,9 @@ export const useStore = create<Store>()(
         paybill: "",
         logo: "",
       },
+
+      setClassFee: (name, amount) =>
+        set((s) => ({ classFees: { ...s.classFees, [name]: amount } })),
 
       updateSchoolProfile: (patch) =>
         set((s) => ({ schoolProfile: { ...s.schoolProfile, ...patch } })),
