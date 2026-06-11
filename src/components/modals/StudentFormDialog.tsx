@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useStore } from "@/lib/store";
 
 type Props = {
   open: boolean;
@@ -18,13 +19,13 @@ type Props = {
 
 export function StudentFormDialog({ open, onOpenChange, student, classes, schoolId, onSaved }: Props) {
   const editing = !!student;
+  const classFees = useStore((s) => s.classFees);
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
   const [admission, setAdmission] = useState("");
   const [classId, setClassId] = useState("");
   const [parentName, setParentName] = useState("");
   const [parentPhone, setParentPhone] = useState("");
-  const [termFee, setTermFee] = useState("45000");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -34,10 +35,13 @@ export function StudentFormDialog({ open, onOpenChange, student, classes, school
       setClassId(student?.class_id ?? "");
       setParentName(student?.parent_name ?? "");
       setParentPhone(student?.parent_phone ?? "");
-      setTermFee(String(student?.term_fee ?? 45000));
       setErrors({});
     }
   }, [open, student]);
+
+  const selectedClass = classes.find((c) => c.id === classId);
+  const fees = selectedClass ? classFees[selectedClass.name] : undefined;
+  const yearFee = fees ? (fees.term1 || 0) + (fees.term2 || 0) + (fees.term3 || 0) : 0;
 
   async function submit() {
     const e: Record<string, string> = {};
@@ -46,13 +50,13 @@ export function StudentFormDialog({ open, onOpenChange, student, classes, school
     if (!classId) e.classId = "Required";
     if (!parentName.trim()) e.parentName = "Required";
     if (!parentPhone.trim()) e.parentPhone = "Required";
-    if (!termFee || isNaN(Number(termFee))) e.termFee = "Enter valid amount";
     setErrors(e);
     if (Object.keys(e).length > 0) return;
     if (!schoolId) return toast.error("School not found");
 
     setLoading(true);
     try {
+      const termFee = yearFee; // derived from fee structure
       if (editing && student) {
         const { error } = await supabase
           .from("students")
@@ -62,7 +66,7 @@ export function StudentFormDialog({ open, onOpenChange, student, classes, school
             class_id: classId,
             parent_name: parentName,
             parent_phone: parentPhone,
-            term_fee: Number(termFee),
+            term_fee: termFee,
           })
           .eq("id", student.id);
         if (error) throw error;
@@ -83,7 +87,7 @@ export function StudentFormDialog({ open, onOpenChange, student, classes, school
           class_id: classId,
           parent_name: parentName,
           parent_phone: parentPhone,
-          term_fee: Number(termFee),
+          term_fee: termFee,
           total_paid: 0,
           status: "active",
         });
@@ -105,7 +109,7 @@ export function StudentFormDialog({ open, onOpenChange, student, classes, school
         <DialogHeader>
           <DialogTitle>{editing ? "Edit Student" : "Add Student"}</DialogTitle>
           <DialogDescription>
-            {editing ? "Update student details below." : "Enter student information to enroll them."}
+            {editing ? "Update student details below." : "Enter student information to enroll them. Fees are derived from the Fee Structure for the selected class."}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-2">
@@ -137,11 +141,25 @@ export function StudentFormDialog({ open, onOpenChange, student, classes, school
               {errors.classId && <p className="text-xs text-destructive mt-1">{errors.classId}</p>}
             </div>
           </div>
-          <div>
-            <Label>Term Fee (KES) *</Label>
-            <Input type="number" value={termFee} onChange={(e) => setTermFee(e.target.value)} placeholder="45000" />
-            {errors.termFee && <p className="text-xs text-destructive mt-1">{errors.termFee}</p>}
-          </div>
+          {selectedClass && (
+            <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+              {fees ? (
+                <>
+                  <div className="font-medium mb-1">Fees for {selectedClass.name} (from Fee Structure)</div>
+                  <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+                    <div>Term 1: <span className="text-foreground font-medium">KES {(fees.term1 || 0).toLocaleString()}</span></div>
+                    <div>Term 2: <span className="text-foreground font-medium">KES {(fees.term2 || 0).toLocaleString()}</span></div>
+                    <div>Term 3: <span className="text-foreground font-medium">KES {(fees.term3 || 0).toLocaleString()}</span></div>
+                  </div>
+                  <div className="mt-2 text-xs">Year total: <span className="font-semibold">KES {yearFee.toLocaleString()}</span></div>
+                </>
+              ) : (
+                <div className="text-xs text-muted-foreground">
+                  No fees set for {selectedClass.name}. Go to Settings → Fees Structure to set them.
+                </div>
+              )}
+            </div>
+          )}
           <div>
             <Label>Parent Name *</Label>
             <Input value={parentName} onChange={(e) => setParentName(e.target.value)} placeholder="John Kamau" />
