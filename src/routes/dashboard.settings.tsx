@@ -13,6 +13,7 @@ import { useStore } from "@/lib/store";
 import { buildFeeStructureHtml } from "@/components/FeeStructureView";
 import { Eye, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getMySchoolId } from "@/lib/supabase-api";
 
 export const Route = createFileRoute("/dashboard/settings")({
   component: SettingsPage,
@@ -32,13 +33,10 @@ function SettingsPage() {
   // Load classes from Supabase (same source as student form)
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: schoolRow } = await supabase
-        .from("schools").select("id").eq("owner_id", user.id).maybeSingle();
-      if (!schoolRow) return;
+      const schoolId = await getMySchoolId();
+      if (!schoolId) return;
       const { data } = await supabase
-        .from("classes").select("name").eq("school_id", schoolRow.id).order("name");
+        .from("classes").select("name").eq("school_id", schoolId).order("name");
       setClasses((data ?? []).map((c) => c.name));
     })();
   }, []);
