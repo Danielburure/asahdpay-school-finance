@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/asahdpay-logo.png";
 
 export function SiteNav() {
