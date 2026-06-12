@@ -208,7 +208,7 @@ function Home() {
                 </li>
               ))}
             </ul>
-            <Link to="/dashboard"><Button className="mt-6">Open the demo dashboard <ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
+            <Link to="/auth"><Button className="mt-6">Get started <ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
           </div>
           <Card className="p-2 shadow-[var(--shadow-elegant)] border-border/60 overflow-hidden">
             <div className="rounded-xl bg-gradient-to-br from-primary/5 to-background p-4">
