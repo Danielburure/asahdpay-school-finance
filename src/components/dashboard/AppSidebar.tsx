@@ -56,7 +56,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader className="border-b border-sidebar-border">
-        <Link to="/" className="flex items-center gap-2 px-1 py-1.5" aria-label="AsahdPay home">
+        <Link to="/dashboard" className="flex items-center gap-2 px-1 py-1.5" aria-label="AsahdPay dashboard">
           <img src={logo} alt="AsahdPay" className={collapsed ? "h-8 w-8 object-contain" : "h-10 w-auto object-contain"} />
         </Link>
       </SidebarHeader>
