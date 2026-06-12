@@ -80,7 +80,7 @@ function Bar({ label, used, total }: { label: string; used: number; total: numbe
     <div>
       <div className="flex justify-between text-sm mb-1.5"><span>{label}</span><span className="text-muted-foreground">{used.toLocaleString()} / {total.toLocaleString()}</span></div>
       <div className="h-2 rounded-full bg-muted overflow-hidden">
-        <div className="h-full bg-[var(--gradient-primary)]" style={{ width: `${pct}%` }} />
+        <div className="h-full" style={{ backgroundImage: "var(--gradient-primary)", width: `${pct}%` }} />
       </div>
     </div>
   );
