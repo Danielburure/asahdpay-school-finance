@@ -300,7 +300,7 @@ function Home() {
                   <li key={f} className="text-sm flex items-center gap-2"><Check className="h-4 w-4 text-success" /> {f}</li>
                 ))}
               </ul>
-              <Link to="/dashboard"><Button className="w-full mt-6" variant={p.featured ? "default" : "outline"}>Start Demo</Button></Link>
+              <Link to="/auth"><Button className="w-full mt-6" variant={p.featured ? "default" : "outline"}>Get Started</Button></Link>
             </Card>
           ))}
         </div>
