@@ -130,6 +130,11 @@ export function RecordPaymentDialog({ open, onOpenChange, defaultAdmission }: Pr
             <Label>Admission Number *</Label>
             <Input value={admission} onChange={(e) => setAdmission(e.target.value)} placeholder="ADM2024001" />
             {errors.admission && <p className="text-xs text-destructive mt-1">{errors.admission}</p>}
+            {looking && !student && admission.trim() && (
+              <div className="mt-2 flex items-center gap-2 text-muted-foreground text-xs">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Looking up student…
+              </div>
+            )}
             {student && (
               <div className="mt-2 flex items-center gap-2 text-success text-xs">
                 <CheckCircle2 className="h-3.5 w-3.5" />
