@@ -22,7 +22,7 @@ function Billing() {
     <div>
       <PageHeader title="Billing" subtitle="Subscription, invoices and payment history" />
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="p-6 lg:col-span-2 bg-[var(--gradient-dark)] text-white border-0">
+        <Card className="p-6 lg:col-span-2 text-white border-0" style={{ backgroundImage: "var(--gradient-dark)" }}>
           <div className="flex items-start justify-between">
             <div>
               <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-2.5 py-1 text-xs"><Sparkles className="h-3 w-3 text-primary" /> Pro Plan</span>
@@ -80,7 +80,7 @@ function Bar({ label, used, total }: { label: string; used: number; total: numbe
     <div>
       <div className="flex justify-between text-sm mb-1.5"><span>{label}</span><span className="text-muted-foreground">{used.toLocaleString()} / {total.toLocaleString()}</span></div>
       <div className="h-2 rounded-full bg-muted overflow-hidden">
-        <div className="h-full bg-[var(--gradient-primary)]" style={{ width: `${pct}%` }} />
+        <div className="h-full" style={{ backgroundImage: "var(--gradient-primary)", width: `${pct}%` }} />
       </div>
     </div>
   );

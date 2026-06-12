@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,12 +8,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { useStore } from "@/lib/store";
 import { KES } from "@/lib/format";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 type Props = {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   defaultAdmission?: string;
+};
+
+type RemoteStudent = {
+  id: string;
+  name: string;
+  admission: string;
+  className: string;
+  balance: number;
 };
 
 export function RecordPaymentDialog({ open, onOpenChange, defaultAdmission }: Props) {
@@ -26,18 +35,52 @@ export function RecordPaymentDialog({ open, onOpenChange, defaultAdmission }: Pr
   const [receipt, setReceipt] = useState("");
   const [notes, setNotes] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [remote, setRemote] = useState<RemoteStudent | null>(null);
+  const [looking, setLooking] = useState(false);
 
-  const student = useMemo(
+  const localStudent = useMemo(
     () => students.find((s) => s.admission.toLowerCase() === admission.toLowerCase()),
     [admission, students],
   );
 
+  const student = localStudent
+    ? { id: localStudent.id, name: localStudent.name, admission: localStudent.admission, className: localStudent.className, balance: localStudent.balance }
+    : remote && remote.admission.toLowerCase() === admission.toLowerCase()
+      ? remote
+      : null;
+
+  // Look up in Supabase if not in local store
+  useEffect(() => {
+    if (!admission.trim() || localStudent) { setRemote(null); return; }
+    const handle = setTimeout(async () => {
+      setLooking(true);
+      try {
+        const { data } = await (supabase as any)
+          .from("students")
+          .select("id, full_name, admission_number, balance, classes(name)")
+          .ilike("admission_number", admission.trim())
+          .maybeSingle();
+        if (data) {
+          setRemote({
+            id: data.id,
+            name: data.full_name,
+            admission: data.admission_number,
+            className: data.classes?.name ?? "—",
+            balance: Number(data.balance ?? 0),
+          });
+        } else setRemote(null);
+      } catch { setRemote(null); }
+      finally { setLooking(false); }
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [admission, localStudent]);
+
   const reset = () => {
     setAdmission(defaultAdmission ?? "");
-    setAmount(""); setMethod("M-Pesa"); setReceipt(""); setNotes(""); setErrors({});
+    setAmount(""); setMethod("M-Pesa"); setReceipt(""); setNotes(""); setErrors({}); setRemote(null);
   };
 
-  const submit = () => {
+  const submit = async () => {
     const e: Record<string, string> = {};
     if (!admission.trim()) e.admission = "Required";
     else if (!student) e.admission = "Student not found";
@@ -46,8 +89,30 @@ export function RecordPaymentDialog({ open, onOpenChange, defaultAdmission }: Pr
     setErrors(e);
     if (Object.keys(e).length > 0) return;
 
-    const payment = addPayment({ admission, amount: amt, method, receiptNo: receipt });
-    if (!payment) { toast.error("Student not found"); return; }
+    // Local store payment (also keeps UI in sync)
+    if (localStudent) {
+      const payment = addPayment({ admission, amount: amt, method, receiptNo: receipt });
+      if (!payment) { toast.error("Student not found"); return; }
+    } else if (remote) {
+      // Persist directly to Supabase
+      try {
+        const balanceAfter = Math.max(0, remote.balance - amt);
+        await (supabase as any).from("payments").insert({
+          student_id: remote.id,
+          admission_number: remote.admission,
+          amount: amt,
+          payment_method: method.toLowerCase(),
+          receipt_number: receipt || `RCT-${Date.now().toString().slice(-6)}`,
+          payment_date: new Date().toISOString().split("T")[0],
+          notes,
+          balance_before: remote.balance,
+          balance_after: balanceAfter,
+        });
+      } catch (err: any) {
+        toast.error(err.message ?? "Failed to record payment");
+        return;
+      }
+    }
     toast.success("Payment recorded successfully");
     reset();
     onOpenChange(false);
@@ -65,6 +130,11 @@ export function RecordPaymentDialog({ open, onOpenChange, defaultAdmission }: Pr
             <Label>Admission Number *</Label>
             <Input value={admission} onChange={(e) => setAdmission(e.target.value)} placeholder="ADM2024001" />
             {errors.admission && <p className="text-xs text-destructive mt-1">{errors.admission}</p>}
+            {looking && !student && admission.trim() && (
+              <div className="mt-2 flex items-center gap-2 text-muted-foreground text-xs">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Looking up student…
+              </div>
+            )}
             {student && (
               <div className="mt-2 flex items-center gap-2 text-success text-xs">
                 <CheckCircle2 className="h-3.5 w-3.5" />

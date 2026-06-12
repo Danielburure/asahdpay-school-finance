@@ -27,6 +27,7 @@ const chartColors = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--colo
 function DashboardHome() {
   const students = useStore((s) => s.students);
   const payments = useStore((s) => s.payments);
+  const school = useStore((s) => s.schoolProfile);
   const totals = useTotals();
   const [recordOpen, setRecordOpen] = useState(false);
   const overdue = students.filter((s) => s.status === "Overdue").slice(0, 6);
@@ -35,7 +36,7 @@ function DashboardHome() {
   return (
     <div>
       <PageHeader
-        title="Welcome back, Grace 👋"
+        title={`Welcome, ${school.name} 👋`}
         subtitle="Here's what's happening with fee collection today."
         actions={
           <>

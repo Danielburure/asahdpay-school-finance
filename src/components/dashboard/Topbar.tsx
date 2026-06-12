@@ -56,14 +56,13 @@ export function Topbar() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="gap-2 px-2">
-            <Avatar className="h-7 w-7"><AvatarFallback className="bg-primary/15 text-primary text-xs font-bold">GW</AvatarFallback></Avatar>
-            <span className="hidden sm:inline text-sm font-medium">Grace W.</span>
+            <Avatar className="h-7 w-7"><AvatarFallback className="bg-primary/15 text-primary text-xs font-bold">{school.name.charAt(0).toUpperCase()}</AvatarFallback></Avatar>
+            <span className="hidden sm:inline text-sm font-medium">{school.name}</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Grace Wambui · Bursar</DropdownMenuLabel>
+          <DropdownMenuLabel>{school.name}</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>Profile</DropdownMenuItem>
           <DropdownMenuItem onClick={signOut}>Sign out</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
