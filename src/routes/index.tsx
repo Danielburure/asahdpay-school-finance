@@ -312,7 +312,7 @@ function Home() {
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Ready to modernize your bursary?</h2>
           <p className="mt-3 text-white/70 max-w-xl mx-auto">Join schools across Kenya already saving days every term with AsahdPay.</p>
           <div className="mt-7 flex justify-center gap-3 flex-wrap">
-            <Link to="/dashboard"><Button size="lg" className="shadow-[var(--shadow-glow)]">Start Free Demo</Button></Link>
+            <Link to="/auth"><Button size="lg" className="shadow-[var(--shadow-glow)]">Create Free Account</Button></Link>
             <Link to="/contact"><Button size="lg" variant="outline" className="bg-transparent text-white border-white/30 hover:bg-white/10 hover:text-white">Talk to Sales</Button></Link>
           </div>
         </Card>
