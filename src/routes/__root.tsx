@@ -72,14 +72,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Asahdpay — School Fee Management System" },
+      { name: "description", content: "Asahdpay is a school fee management system for Kenyan schools — collect fees, send SMS receipts, and track balances." },
+      { name: "author", content: "Asahdpay" },
+      { property: "og:title", content: "Asahdpay — School Fee Management System" },
+      { property: "og:description", content: "School fee management built for Kenyan schools." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
+      { property: "og:url", content: "https://asahdpay.vercel.app" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       {

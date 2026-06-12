@@ -29,19 +29,19 @@ function Support() {
           <MessageCircle className="h-6 w-6 text-success" />
           <h3 className="font-semibold mt-3">WhatsApp support</h3>
           <p className="text-sm text-muted-foreground mt-1">Chat with us directly</p>
-          <Button className="mt-4 w-full" onClick={() => toast.success("Opening WhatsApp...")}>+254 700 000 000</Button>
+          <Button className="mt-4 w-full" onClick={() => toast.success("Opening WhatsApp...")}>+254720485988</Button>
         </Card>
         <Card className="p-6">
           <Mail className="h-6 w-6 text-primary" />
           <h3 className="font-semibold mt-3">Email support</h3>
-          <p className="text-sm text-muted-foreground mt-1">support@asahdpay.co.ke</p>
+          <p className="text-sm text-muted-foreground mt-1">asahd010@gmail.com</p>
           <Button variant="outline" className="mt-4 w-full">Send email</Button>
         </Card>
         <Card className="p-6">
           <Phone className="h-6 w-6 text-warning" />
           <h3 className="font-semibold mt-3">Phone support</h3>
-          <p className="text-sm text-muted-foreground mt-1">Mon–Fri · 8am–6pm</p>
-          <Button variant="outline" className="mt-4 w-full">+254 700 000 000</Button>
+          <p className="text-sm text-muted-foreground mt-1">Mon–sunday · 24/7 support</p>
+          <Button variant="outline" className="mt-4 w-full">+254720485988</Button>
         </Card>
       </div>
 
@@ -54,7 +54,7 @@ function Support() {
           >
             <div><Label>Subject</Label><Input required /></div>
             <div><Label>Describe the issue</Label><Textarea rows={5} required /></div>
-            <Button>Submit ticket</Button>
+            <Button>Submit Complain</Button>
           </form>
         </Card>
         <Card className="p-6">
