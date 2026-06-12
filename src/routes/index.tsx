@@ -82,9 +82,9 @@ function Home() {
                 Automate fee collection, M-Pesa tracking, SMS reminders, receipts and financial reports for Kenyan schools.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link to="/dashboard">
+                <Link to="/auth">
                   <Button size="lg" className="shadow-[var(--shadow-glow)]">
-                    Start Demo <ArrowRight className="ml-2 h-4 w-4" />
+                    Create Account <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
                 <Link to="/contact">
