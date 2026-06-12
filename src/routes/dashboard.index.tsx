@@ -35,7 +35,7 @@ function DashboardHome() {
   return (
     <div>
       <PageHeader
-        title="Welcome back, Grace 👋"
+        title={`Welcome, ${school.name} 👋`}
         subtitle="Here's what's happening with fee collection today."
         actions={
           <>
