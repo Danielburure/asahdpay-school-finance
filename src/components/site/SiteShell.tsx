@@ -5,6 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/asahdpay-logo.png";
 
 export function SiteNav() {
+  const [authed, setAuthed] = useState(false);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setAuthed(!!data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => setAuthed(!!session));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  const signOut = async () => { await supabase.auth.signOut(); setAuthed(false); };
+
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -18,8 +27,17 @@ export function SiteNav() {
           <Link to="/contact" activeProps={{ className: "text-foreground" }} className="hover:text-foreground transition">Contact</Link>
         </nav>
         <div className="flex items-center gap-2">
-          <Link to="/auth"><Button variant="ghost" size="sm">Sign In</Button></Link>
-          <Link to="/auth"><Button size="sm" className="shadow-[var(--shadow-glow)]">Create Account</Button></Link>
+          {authed ? (
+            <>
+              <Link to="/dashboard"><Button size="sm" className="shadow-[var(--shadow-glow)]">Open Dashboard</Button></Link>
+              <Button variant="ghost" size="sm" onClick={signOut}>Sign out</Button>
+            </>
+          ) : (
+            <>
+              <Link to="/auth"><Button variant="ghost" size="sm">Sign In</Button></Link>
+              <Link to="/auth"><Button size="sm" className="shadow-[var(--shadow-glow)]">Create Account</Button></Link>
+            </>
+          )}
         </div>
       </div>
     </header>
