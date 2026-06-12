@@ -82,9 +82,9 @@ function Home() {
                 Automate fee collection, M-Pesa tracking, SMS reminders, receipts and financial reports for Kenyan schools.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link to="/dashboard">
+                <Link to="/auth">
                   <Button size="lg" className="shadow-[var(--shadow-glow)]">
-                    Start Demo <ArrowRight className="ml-2 h-4 w-4" />
+                    Create Account <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
                 <Link to="/contact">
@@ -208,7 +208,7 @@ function Home() {
                 </li>
               ))}
             </ul>
-            <Link to="/dashboard"><Button className="mt-6">Open the demo dashboard <ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
+            <Link to="/auth"><Button className="mt-6">Get started <ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
           </div>
           <Card className="p-2 shadow-[var(--shadow-elegant)] border-border/60 overflow-hidden">
             <div className="rounded-xl bg-gradient-to-br from-primary/5 to-background p-4">
@@ -300,7 +300,7 @@ function Home() {
                   <li key={f} className="text-sm flex items-center gap-2"><Check className="h-4 w-4 text-success" /> {f}</li>
                 ))}
               </ul>
-              <Link to="/dashboard"><Button className="w-full mt-6" variant={p.featured ? "default" : "outline"}>Start Demo</Button></Link>
+              <Link to="/auth"><Button className="w-full mt-6" variant={p.featured ? "default" : "outline"}>Get Started</Button></Link>
             </Card>
           ))}
         </div>
@@ -312,7 +312,7 @@ function Home() {
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Ready to modernize your bursary?</h2>
           <p className="mt-3 text-white/70 max-w-xl mx-auto">Join schools across Kenya already saving days every term with AsahdPay.</p>
           <div className="mt-7 flex justify-center gap-3 flex-wrap">
-            <Link to="/dashboard"><Button size="lg" className="shadow-[var(--shadow-glow)]">Start Free Demo</Button></Link>
+            <Link to="/auth"><Button size="lg" className="shadow-[var(--shadow-glow)]">Create Free Account</Button></Link>
             <Link to="/contact"><Button size="lg" variant="outline" className="bg-transparent text-white border-white/30 hover:bg-white/10 hover:text-white">Talk to Sales</Button></Link>
           </div>
         </Card>
