@@ -68,6 +68,7 @@ export function StudentFormDialog({ open, onOpenChange, student, classes, school
         if (error) throw error;
         toast.success("Student updated");
       } else {
+        // Check duplicate admission number
         const { data: existing } = await supabase
           .from("students")
           .select("id")

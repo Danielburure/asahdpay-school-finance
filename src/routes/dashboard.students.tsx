@@ -60,13 +60,14 @@ function StudentsPage() {
     async function load() {
       setLoading(true);
       try {
-        const { data: staffData } = await supabase
-          .from("staff")
-          .select("school_id")
-          .single();
-        if (!staffData) return;
-        const sid = staffData.school_id;
+        // Use the secure RPC function instead of querying staff table directly
+        const { data: sid, error: rpcError } = await supabase.rpc("my_school_id");
+        if (rpcError || !sid) {
+          toast.error("Could not find your school. Please log in again.");
+          return;
+        }
         setSchoolId(sid);
+
         const { data: classData } = await supabase
           .from("classes")
           .select("id, name")
@@ -131,7 +132,6 @@ function StudentsPage() {
   async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !schoolId) return;
-
     const reader = new FileReader();
     reader.onload = async (evt) => {
       try {
@@ -139,12 +139,8 @@ function StudentsPage() {
         const wb = XLSX.read(data, { type: "array" });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows: any[] = XLSX.utils.sheet_to_json(ws);
-
         if (rows.length === 0) return toast.error("No data found in file");
-
-        // Find class ids by name
         const classMap = Object.fromEntries(classes.map((c) => [c.name.toLowerCase(), c.id]));
-
         const toInsert = rows.map((r) => ({
           school_id: schoolId,
           full_name: r["Name"] ?? r["full_name"] ?? "",
@@ -156,11 +152,9 @@ function StudentsPage() {
           total_paid: Number(r["Total Paid"] ?? r["total_paid"] ?? 0),
           status: "active" as const,
         })).filter((s) => s.full_name && s.admission_number);
-
         const { error } = await supabase
           .from("students")
           .upsert(toInsert, { onConflict: "school_id,admission_number" });
-
         if (error) throw error;
         toast.success(`${toInsert.length} students imported`);
         await loadStudents(schoolId, classes);
@@ -181,12 +175,8 @@ function StudentsPage() {
       return true;
     });
     return list.sort((a, b) => {
-      if (sortKey === "balance") {
-        return sortDir === "asc" ? (a.balance ?? 0) - (b.balance ?? 0) : (b.balance ?? 0) - (a.balance ?? 0);
-      }
-      if (sortKey === "className") {
-        return sortDir === "asc" ? a.className.localeCompare(b.className) : b.className.localeCompare(a.className);
-      }
+      if (sortKey === "balance") return sortDir === "asc" ? (a.balance ?? 0) - (b.balance ?? 0) : (b.balance ?? 0) - (a.balance ?? 0);
+      if (sortKey === "className") return sortDir === "asc" ? a.className.localeCompare(b.className) : b.className.localeCompare(a.className);
       const av = String(a[sortKey]); const bv = String(b[sortKey]);
       return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
     });
