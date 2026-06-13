@@ -41,6 +41,8 @@ export type SchoolProfile = {
   logo: string; // data URL
 };
 
+export type TermKey = "term1" | "term2" | "term3";
+
 
 type NewStudentInput = {
   name: string;
@@ -84,6 +86,10 @@ type Store = {
   classes: string[];
   classFees: Record<string, { term1: number; term2: number; term3: number }>;
   setClassFee: (name: string, fees: { term1: number; term2: number; term3: number }) => void;
+  currentTerm: TermKey;
+  setCurrentTerm: (t: TermKey) => void;
+  academicYear: number;
+  setAcademicYear: (y: number) => void;
   schoolProfile: SchoolProfile;
   updateSchoolProfile: (patch: Partial<SchoolProfile>) => void;
 
@@ -121,6 +127,10 @@ export const useStore = create<Store>()(
       schools: [],
       classes: [],
       classFees: {},
+      currentTerm: "term1",
+      setCurrentTerm: (t) => set({ currentTerm: t }),
+      academicYear: new Date().getFullYear(),
+      setAcademicYear: (y) => set({ academicYear: y }),
       schoolProfile: {
         name: "My School",
         email: "",
@@ -285,7 +295,7 @@ export const useStore = create<Store>()(
     }),
     {
       name: "asahdpay-store-v3",
-      version: 3,
+      version: 4,
     },
   ),
 );

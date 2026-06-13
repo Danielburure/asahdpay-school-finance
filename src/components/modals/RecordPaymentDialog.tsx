@@ -49,6 +49,9 @@ export function RecordPaymentDialog({ open, onOpenChange, defaultAdmission }: Pr
       ? remote
       : null;
 
+  const classFees = useStore((s) => s.classFees);
+  const currentTerm = useStore((s) => s.currentTerm);
+
   // Look up in Supabase if not in local store
   useEffect(() => {
     if (!admission.trim() || localStudent) { setRemote(null); return; }
@@ -57,23 +60,26 @@ export function RecordPaymentDialog({ open, onOpenChange, defaultAdmission }: Pr
       try {
         const { data } = await (supabase as any)
           .from("students")
-          .select("id, full_name, admission_number, balance, classes(name)")
+          .select("id, full_name, admission_number, total_paid, term_fee, classes(name)")
           .ilike("admission_number", admission.trim())
           .maybeSingle();
         if (data) {
+          const className = data.classes?.name ?? "—";
+          const fee = classFees[className]?.[currentTerm] ?? Number(data.term_fee ?? 0);
+          const balance = Math.max(0, fee - Number(data.total_paid ?? 0));
           setRemote({
             id: data.id,
             name: data.full_name,
             admission: data.admission_number,
-            className: data.classes?.name ?? "—",
-            balance: Number(data.balance ?? 0),
+            className,
+            balance,
           });
         } else setRemote(null);
       } catch { setRemote(null); }
       finally { setLooking(false); }
     }, 300);
     return () => clearTimeout(handle);
-  }, [admission, localStudent]);
+  }, [admission, localStudent, classFees, currentTerm]);
 
   const reset = () => {
     setAdmission(defaultAdmission ?? "");
@@ -108,6 +114,11 @@ export function RecordPaymentDialog({ open, onOpenChange, defaultAdmission }: Pr
           balance_before: remote.balance,
           balance_after: balanceAfter,
         });
+        // Increment total_paid on student so balance reflects payment
+        const { data: cur } = await (supabase as any)
+          .from("students").select("total_paid").eq("id", remote.id).maybeSingle();
+        const newPaid = Number(cur?.total_paid ?? 0) + amt;
+        await (supabase as any).from("students").update({ total_paid: newPaid }).eq("id", remote.id);
       } catch (err: any) {
         toast.error(err.message ?? "Failed to record payment");
         return;
