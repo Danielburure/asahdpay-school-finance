@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { StudentFormDialog } from "@/components/modals/StudentFormDialog";
 import { CreateClassesDialog } from "@/components/modals/CreateClassesDialog";
 import { ConfirmDeleteDialog } from "@/components/modals/ConfirmDeleteDialog";
+import { useStore } from "@/lib/store";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
@@ -38,11 +39,18 @@ type Student = {
 };
 
 function StudentsPage() {
+  const classFees = useStore((s) => s.classFees);
+  const currentTerm = useStore((s) => s.currentTerm);
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [schoolId, setSchoolId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const balanceFor = (s: Student) => {
+    const fee = classFees[s.className]?.[currentTerm] ?? s.term_fee ?? 0;
+    return Math.max(0, fee - (s.total_paid ?? 0));
+  };
 
   const [q, setQ] = useState("");
   const [cls, setCls] = useState("all");
