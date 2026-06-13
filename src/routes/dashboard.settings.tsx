@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { useStore } from "@/lib/store";
+import { useStore, type TermKey } from "@/lib/store";
 import { buildFeeStructureHtml } from "@/components/FeeStructureView";
 import { Eye, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -175,12 +176,8 @@ function SettingsPage() {
             <Button onClick={() => toast.success("Saved")}>Save</Button>
           </TabsContent>
 
-          <TabsContent value="term" className="mt-6 space-y-4 max-w-2xl">
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div><Label>Current term</Label><Input defaultValue="Term 2, 2025" /></div>
-              <div><Label>Next term starts</Label><Input type="date" /></div>
-            </div>
-            <Button onClick={() => toast.success("Saved")}>Save</Button>
+          <TabsContent value="term" className="mt-6 space-y-6 max-w-2xl">
+            <TermYearSection />
           </TabsContent>
 
           <TabsContent value="notif" className="mt-6 space-y-3 max-w-2xl">
