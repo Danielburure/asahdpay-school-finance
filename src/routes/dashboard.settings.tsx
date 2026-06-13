@@ -192,3 +192,50 @@ function SettingsPage() {
     </div>
   );
 }
+
+function TermYearSection() {
+  const currentTerm = useStore((s) => s.currentTerm);
+  const setCurrentTerm = useStore((s) => s.setCurrentTerm);
+  const academicYear = useStore((s) => s.academicYear);
+  const setAcademicYear = useStore((s) => s.setAcademicYear);
+
+  const [term, setTerm] = useState<TermKey>(currentTerm);
+  const [year, setYear] = useState<number>(academicYear);
+
+  const years = Array.from({ length: 30 }, (_, i) => 2024 + i); // 2024..2053
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-lg border p-4 space-y-3">
+        <h3 className="font-semibold">Term</h3>
+        <p className="text-sm text-muted-foreground">
+          Selecting a term sets the default fee balance for every student from the Fees Structure.
+        </p>
+        <Select value={term} onValueChange={(v) => setTerm(v as TermKey)}>
+          <SelectTrigger className="w-60"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="term1">TERM 1</SelectItem>
+            <SelectItem value="term2">TERM 2</SelectItem>
+            <SelectItem value="term3">TERM 3</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button onClick={() => { setCurrentTerm(term); toast.success("Term saved"); }}>
+          <Save className="h-4 w-4 mr-1" /> Save Term
+        </Button>
+      </div>
+
+      <div className="rounded-lg border p-4 space-y-3">
+        <h3 className="font-semibold">Academic Year</h3>
+        <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
+          <SelectTrigger className="w-60"><SelectValue /></SelectTrigger>
+          <SelectContent className="max-h-72">
+            {years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Button onClick={() => { setAcademicYear(year); toast.success("Academic year saved"); }}>
+          <Save className="h-4 w-4 mr-1" /> Save Year
+        </Button>
+      </div>
+    </div>
+  );
+}
