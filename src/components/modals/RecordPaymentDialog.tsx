@@ -114,6 +114,11 @@ export function RecordPaymentDialog({ open, onOpenChange, defaultAdmission }: Pr
           balance_before: remote.balance,
           balance_after: balanceAfter,
         });
+        // Increment total_paid on student so balance reflects payment
+        const { data: cur } = await (supabase as any)
+          .from("students").select("total_paid").eq("id", remote.id).maybeSingle();
+        const newPaid = Number(cur?.total_paid ?? 0) + amt;
+        await (supabase as any).from("students").update({ total_paid: newPaid }).eq("id", remote.id);
       } catch (err: any) {
         toast.error(err.message ?? "Failed to record payment");
         return;
