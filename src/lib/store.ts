@@ -295,7 +295,7 @@ export const useStore = create<Store>()(
     }),
     {
       name: "asahdpay-store-v3",
-      version: 3,
+      version: 4,
     },
   ),
 );
