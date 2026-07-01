@@ -8,12 +8,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { StatusBadge } from "@/components/StatusBadge";
 import { KES, dateTime } from "@/lib/format";
 import { Download, FilePlus2, Search, Eye, ChevronLeft, ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { RecordPaymentDialog } from "@/components/modals/RecordPaymentDialog";
 import { ReceiptViewDialog } from "@/components/modals/ReceiptViewDialog";
 import type { Payment } from "@/lib/mock";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { getMySchoolId } from "@/lib/supabase-api";
 
 export const Route = createFileRoute("/dashboard/payments")({
   component: PaymentsPage,
@@ -22,22 +24,67 @@ export const Route = createFileRoute("/dashboard/payments")({
 const PAGE = 15;
 
 function PaymentsPage() {
-  const payments = useStore((s) => s.payments);
+  const localPayments = useStore((s) => s.payments);
+  const [remote, setRemote] = useState<Payment[]>([]);
+  const [recordOpen, setRecordOpen] = useState(false);
+  const [viewing, setViewing] = useState<Payment | null>(null);
   const [q, setQ] = useState("");
   const [m, setM] = useState("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [page, setPage] = useState(1);
-  const [recordOpen, setRecordOpen] = useState(false);
-  const [viewing, setViewing] = useState<Payment | null>(null);
 
-  const filtered = useMemo(() => payments.filter((p) => {
+  const loadRemote = async () => {
+    const schoolId = await getMySchoolId();
+    if (!schoolId) return;
+    try {
+      const { data } = await (supabase as any)
+        .from("payments")
+        .select("id, admission_number, amount, payment_method, receipt_number, transaction_code, payment_date, created_at, notes, students(full_name, classes(name))")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      const mapped: Payment[] = (data ?? []).map((p: any) => ({
+        id: p.id,
+        studentId: p.student_id ?? "",
+        studentName: p.students?.full_name ?? "—",
+        admission: p.admission_number ?? "",
+        amount: Number(p.amount ?? 0),
+        method: normalizeMethod(p.payment_method),
+        receiptNo: p.receipt_number ?? "",
+        txCode: p.transaction_code ?? "—",
+        recordedBy: "Bursar",
+        date: p.created_at ?? p.payment_date ?? new Date().toISOString(),
+        className: p.students?.classes?.name ?? "—",
+      }));
+      setRemote(mapped);
+    } catch { /* ignore */ }
+  };
+
+  useEffect(() => { loadRemote(); }, []);
+  // Reload remote list after closing the record dialog
+  useEffect(() => { if (!recordOpen) loadRemote(); }, [recordOpen]);
+
+  // Merge remote + local, dedupe by receiptNo+admission
+  const merged = useMemo(() => {
+    const key = (p: Payment) => `${p.receiptNo}|${p.admission}|${p.amount}`;
+    const seen = new Set<string>();
+    const combined: Payment[] = [];
+    for (const p of [...localPayments, ...remote]) {
+      const k = key(p);
+      if (seen.has(k)) continue;
+      seen.add(k);
+      combined.push(p);
+    }
+    return combined.sort((a, b) => +new Date(b.date) - +new Date(a.date));
+  }, [localPayments, remote]);
+
+  const filtered = useMemo(() => merged.filter((p) => {
     if (q && !`${p.studentName} ${p.admission} ${p.receiptNo} ${p.txCode}`.toLowerCase().includes(q.toLowerCase())) return false;
     if (m !== "all" && p.method !== m) return false;
     if (from && +new Date(p.date) < +new Date(from)) return false;
     if (to && +new Date(p.date) > +new Date(to) + 86400000) return false;
     return true;
-  }), [payments, q, m, from, to]);
+  }), [merged, q, m, from, to]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE));
   const slice = filtered.slice((page - 1) * PAGE, page * PAGE);
@@ -103,7 +150,7 @@ function PaymentsPage() {
                 </TableRow>
               ))}
               {slice.length === 0 && (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No payments match.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No payments recorded yet.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -121,4 +168,12 @@ function PaymentsPage() {
       <ReceiptViewDialog open={!!viewing} onOpenChange={(v) => !v && setViewing(null)} payment={viewing} />
     </div>
   );
+}
+
+function normalizeMethod(m?: string): Payment["method"] {
+  const s = (m || "").toLowerCase();
+  if (s.includes("mpesa") || s === "m-pesa") return "M-Pesa";
+  if (s.includes("bank")) return "Bank";
+  if (s.includes("cheque") || s.includes("check")) return "Cheque";
+  return "Cash";
 }

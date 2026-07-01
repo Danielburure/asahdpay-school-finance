@@ -57,6 +57,7 @@ type NewPaymentInput = {
   amount: number;
   method: Payment["method"];
   receiptNo: string;
+  txCode?: string;
   notes?: string;
   date?: string;
 };
@@ -201,7 +202,7 @@ export const useStore = create<Store>()(
           amount: input.amount,
           method: input.method,
           receiptNo: input.receiptNo || `RCT-${Date.now().toString().slice(-6)}`,
-          txCode: `Q${Math.random().toString(36).slice(2, 11).toUpperCase()}`,
+          txCode: input.txCode || `Q${Math.random().toString(36).slice(2, 11).toUpperCase()}`,
           recordedBy: "Bursar",
           date: input.date ?? new Date().toISOString(),
           className: student.className,

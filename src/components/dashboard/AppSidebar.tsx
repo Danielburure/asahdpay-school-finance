@@ -4,8 +4,8 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import {
-  LayoutDashboard, Users, CreditCard, FilePlus2, Receipt, MessageSquare,
-  BarChart3, UserCog, ScrollText, Settings, Wallet, LifeBuoy, AlertTriangle, FileSignature
+  LayoutDashboard, Users, CreditCard, Receipt, MessageSquare,
+  BarChart3, UserCog, ScrollText, Settings, Wallet, LifeBuoy, BookOpen, FileText
 } from "lucide-react";
 import logo from "@/assets/asahdpay-logo.png";
 
@@ -21,9 +21,6 @@ const groups = [
     items: [
       { title: "Students", url: "/dashboard/students", icon: Users },
       { title: "Payments", url: "/dashboard/payments", icon: CreditCard },
-      { title: "Record Payment", url: "/dashboard/payments/record", icon: FilePlus2 },
-      { title: "Manual Receipt", url: "/dashboard/payments/manual-receipt", icon: FileSignature },
-      { title: "Unmatched", url: "/dashboard/payments/unmatched", icon: AlertTriangle },
       { title: "Receipts", url: "/dashboard/receipts", icon: Receipt },
     ],
   },
@@ -40,7 +37,9 @@ const groups = [
       { title: "Staff", url: "/dashboard/staff", icon: UserCog },
       { title: "Audit Logs", url: "/dashboard/audit", icon: ScrollText },
       { title: "Settings", url: "/dashboard/settings", icon: Settings },
+      { title: "Fee Structure", url: "/dashboard/fees", icon: FileText },
       { title: "Billing", url: "/dashboard/billing", icon: Wallet },
+      { title: "User Manual", url: "/dashboard/manual", icon: BookOpen },
       { title: "Support", url: "/dashboard/support", icon: LifeBuoy },
     ],
   },

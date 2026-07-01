@@ -25,12 +25,11 @@ import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settin
 import { Route as DashboardReportsRouteImport } from './routes/dashboard.reports'
 import { Route as DashboardReceiptsRouteImport } from './routes/dashboard.receipts'
 import { Route as DashboardPaymentsRouteImport } from './routes/dashboard.payments'
+import { Route as DashboardManualRouteImport } from './routes/dashboard.manual'
+import { Route as DashboardFeesRouteImport } from './routes/dashboard.fees'
 import { Route as DashboardBillingRouteImport } from './routes/dashboard.billing'
 import { Route as DashboardAuditRouteImport } from './routes/dashboard.audit'
 import { Route as DashboardStudentsIdRouteImport } from './routes/dashboard.students.$id'
-import { Route as DashboardPaymentsUnmatchedRouteImport } from './routes/dashboard.payments.unmatched'
-import { Route as DashboardPaymentsRecordRouteImport } from './routes/dashboard.payments.record'
-import { Route as DashboardPaymentsManualReceiptRouteImport } from './routes/dashboard.payments.manual-receipt'
 
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
@@ -112,6 +111,16 @@ const DashboardPaymentsRoute = DashboardPaymentsRouteImport.update({
   path: '/payments',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardManualRoute = DashboardManualRouteImport.update({
+  id: '/manual',
+  path: '/manual',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardFeesRoute = DashboardFeesRouteImport.update({
+  id: '/fees',
+  path: '/fees',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardBillingRoute = DashboardBillingRouteImport.update({
   id: '/billing',
   path: '/billing',
@@ -127,23 +136,6 @@ const DashboardStudentsIdRoute = DashboardStudentsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => DashboardStudentsRoute,
 } as any)
-const DashboardPaymentsUnmatchedRoute =
-  DashboardPaymentsUnmatchedRouteImport.update({
-    id: '/unmatched',
-    path: '/unmatched',
-    getParentRoute: () => DashboardPaymentsRoute,
-  } as any)
-const DashboardPaymentsRecordRoute = DashboardPaymentsRecordRouteImport.update({
-  id: '/record',
-  path: '/record',
-  getParentRoute: () => DashboardPaymentsRoute,
-} as any)
-const DashboardPaymentsManualReceiptRoute =
-  DashboardPaymentsManualReceiptRouteImport.update({
-    id: '/manual-receipt',
-    path: '/manual-receipt',
-    getParentRoute: () => DashboardPaymentsRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -155,7 +147,9 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/dashboard/audit': typeof DashboardAuditRoute
   '/dashboard/billing': typeof DashboardBillingRoute
-  '/dashboard/payments': typeof DashboardPaymentsRouteWithChildren
+  '/dashboard/fees': typeof DashboardFeesRoute
+  '/dashboard/manual': typeof DashboardManualRoute
+  '/dashboard/payments': typeof DashboardPaymentsRoute
   '/dashboard/receipts': typeof DashboardReceiptsRoute
   '/dashboard/reports': typeof DashboardReportsRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -164,9 +158,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/students': typeof DashboardStudentsRouteWithChildren
   '/dashboard/support': typeof DashboardSupportRoute
   '/dashboard/': typeof DashboardIndexRoute
-  '/dashboard/payments/manual-receipt': typeof DashboardPaymentsManualReceiptRoute
-  '/dashboard/payments/record': typeof DashboardPaymentsRecordRoute
-  '/dashboard/payments/unmatched': typeof DashboardPaymentsUnmatchedRoute
   '/dashboard/students/$id': typeof DashboardStudentsIdRoute
 }
 export interface FileRoutesByTo {
@@ -178,7 +169,9 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/dashboard/audit': typeof DashboardAuditRoute
   '/dashboard/billing': typeof DashboardBillingRoute
-  '/dashboard/payments': typeof DashboardPaymentsRouteWithChildren
+  '/dashboard/fees': typeof DashboardFeesRoute
+  '/dashboard/manual': typeof DashboardManualRoute
+  '/dashboard/payments': typeof DashboardPaymentsRoute
   '/dashboard/receipts': typeof DashboardReceiptsRoute
   '/dashboard/reports': typeof DashboardReportsRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -187,9 +180,6 @@ export interface FileRoutesByTo {
   '/dashboard/students': typeof DashboardStudentsRouteWithChildren
   '/dashboard/support': typeof DashboardSupportRoute
   '/dashboard': typeof DashboardIndexRoute
-  '/dashboard/payments/manual-receipt': typeof DashboardPaymentsManualReceiptRoute
-  '/dashboard/payments/record': typeof DashboardPaymentsRecordRoute
-  '/dashboard/payments/unmatched': typeof DashboardPaymentsUnmatchedRoute
   '/dashboard/students/$id': typeof DashboardStudentsIdRoute
 }
 export interface FileRoutesById {
@@ -203,7 +193,9 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/dashboard/audit': typeof DashboardAuditRoute
   '/dashboard/billing': typeof DashboardBillingRoute
-  '/dashboard/payments': typeof DashboardPaymentsRouteWithChildren
+  '/dashboard/fees': typeof DashboardFeesRoute
+  '/dashboard/manual': typeof DashboardManualRoute
+  '/dashboard/payments': typeof DashboardPaymentsRoute
   '/dashboard/receipts': typeof DashboardReceiptsRoute
   '/dashboard/reports': typeof DashboardReportsRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -212,9 +204,6 @@ export interface FileRoutesById {
   '/dashboard/students': typeof DashboardStudentsRouteWithChildren
   '/dashboard/support': typeof DashboardSupportRoute
   '/dashboard/': typeof DashboardIndexRoute
-  '/dashboard/payments/manual-receipt': typeof DashboardPaymentsManualReceiptRoute
-  '/dashboard/payments/record': typeof DashboardPaymentsRecordRoute
-  '/dashboard/payments/unmatched': typeof DashboardPaymentsUnmatchedRoute
   '/dashboard/students/$id': typeof DashboardStudentsIdRoute
 }
 export interface FileRouteTypes {
@@ -229,6 +218,8 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/dashboard/audit'
     | '/dashboard/billing'
+    | '/dashboard/fees'
+    | '/dashboard/manual'
     | '/dashboard/payments'
     | '/dashboard/receipts'
     | '/dashboard/reports'
@@ -238,9 +229,6 @@ export interface FileRouteTypes {
     | '/dashboard/students'
     | '/dashboard/support'
     | '/dashboard/'
-    | '/dashboard/payments/manual-receipt'
-    | '/dashboard/payments/record'
-    | '/dashboard/payments/unmatched'
     | '/dashboard/students/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -252,6 +240,8 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/dashboard/audit'
     | '/dashboard/billing'
+    | '/dashboard/fees'
+    | '/dashboard/manual'
     | '/dashboard/payments'
     | '/dashboard/receipts'
     | '/dashboard/reports'
@@ -261,9 +251,6 @@ export interface FileRouteTypes {
     | '/dashboard/students'
     | '/dashboard/support'
     | '/dashboard'
-    | '/dashboard/payments/manual-receipt'
-    | '/dashboard/payments/record'
-    | '/dashboard/payments/unmatched'
     | '/dashboard/students/$id'
   id:
     | '__root__'
@@ -276,6 +263,8 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/dashboard/audit'
     | '/dashboard/billing'
+    | '/dashboard/fees'
+    | '/dashboard/manual'
     | '/dashboard/payments'
     | '/dashboard/receipts'
     | '/dashboard/reports'
@@ -285,9 +274,6 @@ export interface FileRouteTypes {
     | '/dashboard/students'
     | '/dashboard/support'
     | '/dashboard/'
-    | '/dashboard/payments/manual-receipt'
-    | '/dashboard/payments/record'
-    | '/dashboard/payments/unmatched'
     | '/dashboard/students/$id'
   fileRoutesById: FileRoutesById
 }
@@ -415,6 +401,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardPaymentsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/manual': {
+      id: '/dashboard/manual'
+      path: '/manual'
+      fullPath: '/dashboard/manual'
+      preLoaderRoute: typeof DashboardManualRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/fees': {
+      id: '/dashboard/fees'
+      path: '/fees'
+      fullPath: '/dashboard/fees'
+      preLoaderRoute: typeof DashboardFeesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/billing': {
       id: '/dashboard/billing'
       path: '/billing'
@@ -436,44 +436,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardStudentsIdRouteImport
       parentRoute: typeof DashboardStudentsRoute
     }
-    '/dashboard/payments/unmatched': {
-      id: '/dashboard/payments/unmatched'
-      path: '/unmatched'
-      fullPath: '/dashboard/payments/unmatched'
-      preLoaderRoute: typeof DashboardPaymentsUnmatchedRouteImport
-      parentRoute: typeof DashboardPaymentsRoute
-    }
-    '/dashboard/payments/record': {
-      id: '/dashboard/payments/record'
-      path: '/record'
-      fullPath: '/dashboard/payments/record'
-      preLoaderRoute: typeof DashboardPaymentsRecordRouteImport
-      parentRoute: typeof DashboardPaymentsRoute
-    }
-    '/dashboard/payments/manual-receipt': {
-      id: '/dashboard/payments/manual-receipt'
-      path: '/manual-receipt'
-      fullPath: '/dashboard/payments/manual-receipt'
-      preLoaderRoute: typeof DashboardPaymentsManualReceiptRouteImport
-      parentRoute: typeof DashboardPaymentsRoute
-    }
   }
 }
-
-interface DashboardPaymentsRouteChildren {
-  DashboardPaymentsManualReceiptRoute: typeof DashboardPaymentsManualReceiptRoute
-  DashboardPaymentsRecordRoute: typeof DashboardPaymentsRecordRoute
-  DashboardPaymentsUnmatchedRoute: typeof DashboardPaymentsUnmatchedRoute
-}
-
-const DashboardPaymentsRouteChildren: DashboardPaymentsRouteChildren = {
-  DashboardPaymentsManualReceiptRoute: DashboardPaymentsManualReceiptRoute,
-  DashboardPaymentsRecordRoute: DashboardPaymentsRecordRoute,
-  DashboardPaymentsUnmatchedRoute: DashboardPaymentsUnmatchedRoute,
-}
-
-const DashboardPaymentsRouteWithChildren =
-  DashboardPaymentsRoute._addFileChildren(DashboardPaymentsRouteChildren)
 
 interface DashboardStudentsRouteChildren {
   DashboardStudentsIdRoute: typeof DashboardStudentsIdRoute
@@ -489,7 +453,9 @@ const DashboardStudentsRouteWithChildren =
 interface DashboardRouteChildren {
   DashboardAuditRoute: typeof DashboardAuditRoute
   DashboardBillingRoute: typeof DashboardBillingRoute
-  DashboardPaymentsRoute: typeof DashboardPaymentsRouteWithChildren
+  DashboardFeesRoute: typeof DashboardFeesRoute
+  DashboardManualRoute: typeof DashboardManualRoute
+  DashboardPaymentsRoute: typeof DashboardPaymentsRoute
   DashboardReceiptsRoute: typeof DashboardReceiptsRoute
   DashboardReportsRoute: typeof DashboardReportsRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
@@ -503,7 +469,9 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAuditRoute: DashboardAuditRoute,
   DashboardBillingRoute: DashboardBillingRoute,
-  DashboardPaymentsRoute: DashboardPaymentsRouteWithChildren,
+  DashboardFeesRoute: DashboardFeesRoute,
+  DashboardManualRoute: DashboardManualRoute,
+  DashboardPaymentsRoute: DashboardPaymentsRoute,
   DashboardReceiptsRoute: DashboardReceiptsRoute,
   DashboardReportsRoute: DashboardReportsRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,

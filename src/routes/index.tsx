@@ -278,33 +278,8 @@ function Home() {
         </div>
       </section>
 
-      {/* PRICING PREVIEW */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
-        <div className="text-center max-w-2xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Simple pricing for every school</h2>
-          <p className="mt-3 text-muted-foreground">Pay per term. Cancel anytime.</p>
-        </div>
-        <div className="mt-12 grid gap-5 md:grid-cols-3 max-w-5xl mx-auto">
-          {[
-            { name: "Standard", price: "KES 9,500", desc: "For small schools (under 500 students)", features: ["M-Pesa tracking","SMS reminders","Basic reports"] },
-            { name: "Pro", price: "KES 19,500", desc: "For growing schools (up to 1,500)", features: ["Everything in Standard","Audit logs","Multi-staff roles","Priority support"], featured: true },
-            { name: "Enterprise", price: "Custom", desc: "For large or multi-campus", features: ["Unlimited students","Multi-school","Dedicated success manager"] },
-          ].map((p) => (
-            <Card key={p.name} className={`p-6 ${p.featured ? "ring-2 ring-primary shadow-[var(--shadow-elegant)]" : ""}`}>
-              {p.featured && <span className="text-xs font-semibold text-primary">MOST POPULAR</span>}
-              <h3 className="mt-1 font-semibold text-lg">{p.name}</h3>
-              <p className="mt-3 text-3xl font-bold">{p.price}<span className="text-sm font-normal text-muted-foreground">/term</span></p>
-              <p className="mt-1 text-xs text-muted-foreground">{p.desc}</p>
-              <ul className="mt-5 space-y-2">
-                {p.features.map((f) => (
-                  <li key={f} className="text-sm flex items-center gap-2"><Check className="h-4 w-4 text-success" /> {f}</li>
-                ))}
-              </ul>
-              <Link to="/auth"><Button className="w-full mt-6" variant={p.featured ? "default" : "outline"}>Get Started</Button></Link>
-            </Card>
-          ))}
-        </div>
-      </section>
+      {/* Pricing moved to Billing page inside the dashboard */}
+
 
       {/* CONTACT CTA */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 pb-10">
