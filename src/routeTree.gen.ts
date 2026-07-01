@@ -25,6 +25,8 @@ import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settin
 import { Route as DashboardReportsRouteImport } from './routes/dashboard.reports'
 import { Route as DashboardReceiptsRouteImport } from './routes/dashboard.receipts'
 import { Route as DashboardPaymentsRouteImport } from './routes/dashboard.payments'
+import { Route as DashboardManualRouteImport } from './routes/dashboard.manual'
+import { Route as DashboardFeesRouteImport } from './routes/dashboard.fees'
 import { Route as DashboardBillingRouteImport } from './routes/dashboard.billing'
 import { Route as DashboardAuditRouteImport } from './routes/dashboard.audit'
 import { Route as DashboardStudentsIdRouteImport } from './routes/dashboard.students.$id'
@@ -109,6 +111,16 @@ const DashboardPaymentsRoute = DashboardPaymentsRouteImport.update({
   path: '/payments',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardManualRoute = DashboardManualRouteImport.update({
+  id: '/manual',
+  path: '/manual',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardFeesRoute = DashboardFeesRouteImport.update({
+  id: '/fees',
+  path: '/fees',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardBillingRoute = DashboardBillingRouteImport.update({
   id: '/billing',
   path: '/billing',
@@ -135,6 +147,8 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/dashboard/audit': typeof DashboardAuditRoute
   '/dashboard/billing': typeof DashboardBillingRoute
+  '/dashboard/fees': typeof DashboardFeesRoute
+  '/dashboard/manual': typeof DashboardManualRoute
   '/dashboard/payments': typeof DashboardPaymentsRoute
   '/dashboard/receipts': typeof DashboardReceiptsRoute
   '/dashboard/reports': typeof DashboardReportsRoute
@@ -155,6 +169,8 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/dashboard/audit': typeof DashboardAuditRoute
   '/dashboard/billing': typeof DashboardBillingRoute
+  '/dashboard/fees': typeof DashboardFeesRoute
+  '/dashboard/manual': typeof DashboardManualRoute
   '/dashboard/payments': typeof DashboardPaymentsRoute
   '/dashboard/receipts': typeof DashboardReceiptsRoute
   '/dashboard/reports': typeof DashboardReportsRoute
@@ -177,6 +193,8 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/dashboard/audit': typeof DashboardAuditRoute
   '/dashboard/billing': typeof DashboardBillingRoute
+  '/dashboard/fees': typeof DashboardFeesRoute
+  '/dashboard/manual': typeof DashboardManualRoute
   '/dashboard/payments': typeof DashboardPaymentsRoute
   '/dashboard/receipts': typeof DashboardReceiptsRoute
   '/dashboard/reports': typeof DashboardReportsRoute
@@ -200,6 +218,8 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/dashboard/audit'
     | '/dashboard/billing'
+    | '/dashboard/fees'
+    | '/dashboard/manual'
     | '/dashboard/payments'
     | '/dashboard/receipts'
     | '/dashboard/reports'
@@ -220,6 +240,8 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/dashboard/audit'
     | '/dashboard/billing'
+    | '/dashboard/fees'
+    | '/dashboard/manual'
     | '/dashboard/payments'
     | '/dashboard/receipts'
     | '/dashboard/reports'
@@ -241,6 +263,8 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/dashboard/audit'
     | '/dashboard/billing'
+    | '/dashboard/fees'
+    | '/dashboard/manual'
     | '/dashboard/payments'
     | '/dashboard/receipts'
     | '/dashboard/reports'
@@ -377,6 +401,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardPaymentsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/manual': {
+      id: '/dashboard/manual'
+      path: '/manual'
+      fullPath: '/dashboard/manual'
+      preLoaderRoute: typeof DashboardManualRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/fees': {
+      id: '/dashboard/fees'
+      path: '/fees'
+      fullPath: '/dashboard/fees'
+      preLoaderRoute: typeof DashboardFeesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/billing': {
       id: '/dashboard/billing'
       path: '/billing'
@@ -415,6 +453,8 @@ const DashboardStudentsRouteWithChildren =
 interface DashboardRouteChildren {
   DashboardAuditRoute: typeof DashboardAuditRoute
   DashboardBillingRoute: typeof DashboardBillingRoute
+  DashboardFeesRoute: typeof DashboardFeesRoute
+  DashboardManualRoute: typeof DashboardManualRoute
   DashboardPaymentsRoute: typeof DashboardPaymentsRoute
   DashboardReceiptsRoute: typeof DashboardReceiptsRoute
   DashboardReportsRoute: typeof DashboardReportsRoute
@@ -429,6 +469,8 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAuditRoute: DashboardAuditRoute,
   DashboardBillingRoute: DashboardBillingRoute,
+  DashboardFeesRoute: DashboardFeesRoute,
+  DashboardManualRoute: DashboardManualRoute,
   DashboardPaymentsRoute: DashboardPaymentsRoute,
   DashboardReceiptsRoute: DashboardReceiptsRoute,
   DashboardReportsRoute: DashboardReportsRoute,
