@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Sparkles, CheckCircle2, Download } from "lucide-react";
+import { Sparkles, CheckCircle2, Download, Check } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/billing")({
   component: Billing,
@@ -15,6 +15,28 @@ const invoices = [
   { id: "INV-2025-01", date: "Jan 1, 2025", amount: "KES 19,500", status: "Paid" },
   { id: "INV-2024-09", date: "Sep 1, 2024", amount: "KES 19,500", status: "Paid" },
   { id: "INV-2024-05", date: "May 1, 2024", amount: "KES 19,500", status: "Paid" },
+];
+
+const packages = [
+  {
+    name: "Standard",
+    price: "KES 9,500",
+    desc: "For small schools (under 500 students)",
+    features: ["M-Pesa tracking", "SMS reminders", "Basic reports"],
+  },
+  {
+    name: "Pro",
+    price: "KES 19,500",
+    desc: "For growing schools (up to 1,500)",
+    features: ["Everything in Standard", "Audit logs", "Multi-staff roles", "Priority support"],
+    featured: true,
+  },
+  {
+    name: "Enterprise",
+    price: "Custom",
+    desc: "For large or multi-campus",
+    features: ["Unlimited students", "Multi-school", "Dedicated success manager"],
+  },
 ];
 
 function Billing() {
@@ -52,7 +74,33 @@ function Billing() {
         </Card>
       </div>
 
-      <Card className="p-5 mt-6">
+      {/* PACKAGES */}
+      <div className="mt-8">
+        <div className="mb-5">
+          <h3 className="text-xl font-semibold">Choose your package</h3>
+          <p className="text-sm text-muted-foreground">Pay per term. Cancel anytime.</p>
+        </div>
+        <div className="grid gap-5 md:grid-cols-3">
+          {packages.map((p) => (
+            <Card key={p.name} className={`p-6 ${p.featured ? "ring-2 ring-primary shadow-[var(--shadow-elegant)]" : ""}`}>
+              {p.featured && <span className="text-xs font-semibold text-primary">MOST POPULAR</span>}
+              <h4 className="mt-1 font-semibold text-lg">{p.name}</h4>
+              <p className="mt-3 text-3xl font-bold">{p.price}<span className="text-sm font-normal text-muted-foreground">/term</span></p>
+              <p className="mt-1 text-xs text-muted-foreground">{p.desc}</p>
+              <ul className="mt-5 space-y-2">
+                {p.features.map((f) => (
+                  <li key={f} className="text-sm flex items-center gap-2"><Check className="h-4 w-4 text-success" /> {f}</li>
+                ))}
+              </ul>
+              <Button className="w-full mt-6" variant={p.featured ? "default" : "outline"}>
+                {p.name === "Enterprise" ? "Contact Sales" : "Choose Plan"}
+              </Button>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      <Card className="p-5 mt-8">
         <h3 className="font-semibold mb-3">Invoices</h3>
         <Table>
           <TableHeader>
@@ -74,6 +122,7 @@ function Billing() {
     </div>
   );
 }
+
 function Bar({ label, used, total }: { label: string; used: number; total: number }) {
   const pct = (used / total) * 100;
   return (
