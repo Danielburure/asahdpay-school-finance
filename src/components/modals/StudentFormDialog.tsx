@@ -96,12 +96,16 @@ export function StudentFormDialog({ open, onOpenChange, student, classes, school
           total_paid: 0,
           status: "active",
         });
-        if (error) throw error;
+        if (error) {
+          console.error("student insert error", error);
+          throw new Error(error.message + (error.details ? ` — ${error.details}` : ""));
+        }
         toast.success("Student added successfully");
       }
       onSaved();
       onOpenChange(false);
     } catch (err: any) {
+      console.error("student save failed", err);
       toast.error(err.message ?? "Something went wrong");
     } finally {
       setLoading(false);
