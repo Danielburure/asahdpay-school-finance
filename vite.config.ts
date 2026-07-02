@@ -1,15 +1,14 @@
-// Vercel-compatible build: SPA mode (no SSR/Workers).
-// Prerender produces static HTML deployable as a static site.
+// Vercel-compatible build: SPA mode without prerender.
+// The Nitro Worker output is unused on Vercel; Vercel serves dist/client
+// with a catch-all rewrite to /_shell.html (see vercel.json).
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
   tanstackStart: {
-    server: { entry: "server" },
     spa: {
       enabled: true,
       prerender: {
-        enabled: true,
-        crawlLinks: true,
+        enabled: false,
       },
     },
   },
