@@ -68,18 +68,33 @@ function StudentsPage() {
     async function load() {
       setLoading(true);
       try {
-        const { data: staffData } = await supabase
+        const { data: sess } = await supabase.auth.getSession();
+        if (!sess.session) {
+          toast.error("Not signed in. Please sign in to load students.");
+          return;
+        }
+        const { data: staffData, error: staffErr } = await supabase
           .from("staff")
           .select("school_id")
-          .single();
-        if (!staffData) return;
+          .eq("user_id", sess.session.user.id)
+          .maybeSingle();
+        if (staffErr) {
+          console.error("staff lookup error", staffErr);
+          toast.error("Staff lookup failed: " + staffErr.message);
+          return;
+        }
+        if (!staffData) {
+          toast.error("No school linked to your account.");
+          return;
+        }
         const sid = staffData.school_id;
         setSchoolId(sid);
-        const { data: classData } = await supabase
+        const { data: classData, error: classErr } = await supabase
           .from("classes")
           .select("id, name")
           .eq("school_id", sid)
           .order("name");
+        if (classErr) console.error("classes load error", classErr);
         const classList = classData ?? [];
         setClasses(classList);
         await loadStudents(sid, classList);
