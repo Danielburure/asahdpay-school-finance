@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { StudentFormDialog } from "@/components/modals/StudentFormDialog";
 import { CreateClassesDialog } from "@/components/modals/CreateClassesDialog";
 import { ConfirmDeleteDialog } from "@/components/modals/ConfirmDeleteDialog";
+import { useStore } from "@/lib/store";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
@@ -38,11 +39,18 @@ type Student = {
 };
 
 function StudentsPage() {
+  const classFees = useStore((s) => s.classFees);
+  const currentTerm = useStore((s) => s.currentTerm);
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [schoolId, setSchoolId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const balanceFor = (s: Student) => {
+    const fee = classFees[s.className]?.[currentTerm] ?? s.term_fee ?? 0;
+    return Math.max(0, fee - (s.total_paid ?? 0));
+  };
 
   const [q, setQ] = useState("");
   const [cls, setCls] = useState("all");
@@ -60,18 +68,33 @@ function StudentsPage() {
     async function load() {
       setLoading(true);
       try {
-        const { data: staffData } = await supabase
+        const { data: sess } = await supabase.auth.getSession();
+        if (!sess.session) {
+          toast.error("Not signed in. Please sign in to load students.");
+          return;
+        }
+        const { data: staffData, error: staffErr } = await supabase
           .from("staff")
           .select("school_id")
-          .single();
-        if (!staffData) return;
+          .eq("user_id", sess.session.user.id)
+          .maybeSingle();
+        if (staffErr) {
+          console.error("staff lookup error", staffErr);
+          toast.error("Staff lookup failed: " + staffErr.message);
+          return;
+        }
+        if (!staffData) {
+          toast.error("No school linked to your account.");
+          return;
+        }
         const sid = staffData.school_id;
         setSchoolId(sid);
-        const { data: classData } = await supabase
+        const { data: classData, error: classErr } = await supabase
           .from("classes")
           .select("id, name")
           .eq("school_id", sid)
           .order("name");
+        if (classErr) console.error("classes load error", classErr);
         const classList = classData ?? [];
         setClasses(classList);
         await loadStudents(sid, classList);
@@ -174,15 +197,16 @@ function StudentsPage() {
 
   const filtered = useMemo(() => {
     const list = students.filter((s) => {
+      const b = balanceFor(s);
       if (q && !`${s.full_name} ${s.admission_number} ${s.parent_name ?? ""}`.toLowerCase().includes(q.toLowerCase())) return false;
       if (cls !== "all" && s.className !== cls) return false;
-      if (bal === "with" && (s.balance ?? 0) === 0) return false;
-      if (bal === "cleared" && (s.balance ?? 0) > 0) return false;
+      if (bal === "with" && b === 0) return false;
+      if (bal === "cleared" && b > 0) return false;
       return true;
     });
     return list.sort((a, b) => {
       if (sortKey === "balance") {
-        return sortDir === "asc" ? (a.balance ?? 0) - (b.balance ?? 0) : (b.balance ?? 0) - (a.balance ?? 0);
+        return sortDir === "asc" ? balanceFor(a) - balanceFor(b) : balanceFor(b) - balanceFor(a);
       }
       if (sortKey === "className") {
         return sortDir === "asc" ? a.className.localeCompare(b.className) : b.className.localeCompare(a.className);
@@ -190,7 +214,7 @@ function StudentsPage() {
       const av = String(a[sortKey]); const bv = String(b[sortKey]);
       return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
     });
-  }, [students, q, cls, bal, sortKey, sortDir]);
+  }, [students, q, cls, bal, sortKey, sortDir, classFees, currentTerm]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE));
   const slice = filtered.slice((page - 1) * PAGE, page * PAGE);
@@ -278,8 +302,8 @@ function StudentsPage() {
                   <TableCell>{s.className}</TableCell>
                   <TableCell>{s.parent_name}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{s.parent_phone}</TableCell>
-                  <TableCell className="text-right font-semibold">{KES(s.balance ?? 0)}</TableCell>
-                  <TableCell><StatusBadge status={getStatus(s.balance)} /></TableCell>
+                  <TableCell className="text-right font-semibold">{KES(balanceFor(s))}</TableCell>
+                  <TableCell><StatusBadge status={getStatus(balanceFor(s))} /></TableCell>
                   <TableCell className="text-right space-x-1">
                     <Button size="icon" variant="ghost" onClick={() => { setEditing(s); setFormOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
                     <Button size="icon" variant="ghost" onClick={() => setDeleting(s)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>

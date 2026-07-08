@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useStore } from "@/lib/store";
+import { KES } from "@/lib/format";
 
 type Props = {
   open: boolean;
@@ -18,13 +20,15 @@ type Props = {
 
 export function StudentFormDialog({ open, onOpenChange, student, classes, schoolId, onSaved }: Props) {
   const editing = !!student;
+  const classFees = useStore((s) => s.classFees);
+  const currentTerm = useStore((s) => s.currentTerm);
+
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
   const [admission, setAdmission] = useState("");
   const [classId, setClassId] = useState("");
   const [parentName, setParentName] = useState("");
   const [parentPhone, setParentPhone] = useState("");
-  const [termFee, setTermFee] = useState("45000");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -34,10 +38,16 @@ export function StudentFormDialog({ open, onOpenChange, student, classes, school
       setClassId(student?.class_id ?? "");
       setParentName(student?.parent_name ?? "");
       setParentPhone(student?.parent_phone ?? "");
-      setTermFee(String(student?.term_fee ?? 45000));
       setErrors({});
     }
   }, [open, student]);
+
+  const selectedClassName = useMemo(
+    () => classes.find((c) => c.id === classId)?.name ?? "",
+    [classId, classes],
+  );
+  const termFee = selectedClassName ? (classFees[selectedClassName]?.[currentTerm] ?? 0) : 0;
+  const termLabel = currentTerm === "term1" ? "Term 1" : currentTerm === "term2" ? "Term 2" : "Term 3";
 
   async function submit() {
     const e: Record<string, string> = {};
@@ -46,7 +56,6 @@ export function StudentFormDialog({ open, onOpenChange, student, classes, school
     if (!classId) e.classId = "Required";
     if (!parentName.trim()) e.parentName = "Required";
     if (!parentPhone.trim()) e.parentPhone = "Required";
-    if (!termFee || isNaN(Number(termFee))) e.termFee = "Enter valid amount";
     setErrors(e);
     if (Object.keys(e).length > 0) return;
     if (!schoolId) return toast.error("School not found");
@@ -62,13 +71,12 @@ export function StudentFormDialog({ open, onOpenChange, student, classes, school
             class_id: classId,
             parent_name: parentName,
             parent_phone: parentPhone,
-            term_fee: Number(termFee),
+            term_fee: termFee,
           })
           .eq("id", student.id);
         if (error) throw error;
         toast.success("Student updated");
       } else {
-        // Check duplicate admission number
         const { data: existing } = await supabase
           .from("students")
           .select("id")
@@ -84,16 +92,20 @@ export function StudentFormDialog({ open, onOpenChange, student, classes, school
           class_id: classId,
           parent_name: parentName,
           parent_phone: parentPhone,
-          term_fee: Number(termFee),
+          term_fee: termFee,
           total_paid: 0,
           status: "active",
         });
-        if (error) throw error;
+        if (error) {
+          console.error("student insert error", error);
+          throw new Error(error.message + (error.details ? ` — ${error.details}` : ""));
+        }
         toast.success("Student added successfully");
       }
       onSaved();
       onOpenChange(false);
     } catch (err: any) {
+      console.error("student save failed", err);
       toast.error(err.message ?? "Something went wrong");
     } finally {
       setLoading(false);
@@ -138,11 +150,17 @@ export function StudentFormDialog({ open, onOpenChange, student, classes, school
               {errors.classId && <p className="text-xs text-destructive mt-1">{errors.classId}</p>}
             </div>
           </div>
-          <div>
-            <Label>Term Fee (KES) *</Label>
-            <Input type="number" value={termFee} onChange={(e) => setTermFee(e.target.value)} placeholder="45000" />
-            {errors.termFee && <p className="text-xs text-destructive mt-1">{errors.termFee}</p>}
-          </div>
+          {classId && (
+            <div className="rounded-md border bg-muted/40 p-3 text-sm">
+              <span className="text-muted-foreground">{termLabel} fee (from Fees Structure): </span>
+              <span className="font-semibold">{KES(termFee)}</span>
+              {termFee === 0 && (
+                <p className="text-xs text-destructive mt-1">
+                  No fee set for this class. Go to Settings → Fees Structure to add one.
+                </p>
+              )}
+            </div>
+          )}
           <div>
             <Label>Parent Name *</Label>
             <Input value={parentName} onChange={(e) => setParentName(e.target.value)} placeholder="John Kamau" />
