@@ -26,7 +26,7 @@ export function CreateClassesDialog({ open, onOpenChange, schoolId, onSaved }: P
         .from("classes")
         .select("id, name")
         .eq("school_id", schoolId)
-        .order("name")
+        .order("created_at", { ascending: true })
         .then(({ data }) => setClasses(data ?? []));
     }
   }, [open, schoolId]);
