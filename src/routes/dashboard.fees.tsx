@@ -30,7 +30,7 @@ function FeesPage() {
       const schoolId = await getMySchoolId();
       if (!schoolId) return;
       const { data } = await supabase
-        .from("classes").select("name").eq("school_id", schoolId).order("name");
+        .from("classes").select("name").eq("school_id", schoolId).order("created_at", { ascending: true });
       setClasses((data ?? []).map((c) => c.name));
     })();
   }, []);

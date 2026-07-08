@@ -23,7 +23,6 @@ export function SiteNav() {
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
           <Link to="/" activeOptions={{ exact: true }} activeProps={{ className: "text-foreground" }} className="hover:text-foreground transition">Home</Link>
           <Link to="/features" activeProps={{ className: "text-foreground" }} className="hover:text-foreground transition">Features</Link>
-          <Link to="/pricing" activeProps={{ className: "text-foreground" }} className="hover:text-foreground transition">Pricing</Link>
           <Link to="/contact" activeProps={{ className: "text-foreground" }} className="hover:text-foreground transition">Contact</Link>
         </nav>
         <div className="flex items-center gap-2">
@@ -56,7 +55,6 @@ export function SiteFooter() {
           <h4 className="font-semibold mb-3 text-sm">Product</h4>
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li><Link to="/features" className="hover:text-foreground">Features</Link></li>
-            <li><Link to="/pricing" className="hover:text-foreground">Pricing</Link></li>
             <li><Link to="/auth" className="hover:text-foreground">Sign In</Link></li>
           </ul>
         </div>

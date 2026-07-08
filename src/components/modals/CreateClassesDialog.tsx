@@ -26,7 +26,7 @@ export function CreateClassesDialog({ open, onOpenChange, schoolId, onSaved }: P
         .from("classes")
         .select("id, name")
         .eq("school_id", schoolId)
-        .order("name")
+        .order("created_at", { ascending: true })
         .then(({ data }) => setClasses(data ?? []));
     }
   }, [open, schoolId]);
@@ -48,7 +48,7 @@ export function CreateClassesDialog({ open, onOpenChange, schoolId, onSaved }: P
     setLoading(false);
 
     if (error) return toast.error("Failed to add class");
-    const updated = [...classes, { id: data.id, name: data.name }].sort((a, b) => a.name.localeCompare(b.name));
+    const updated = [...classes, { id: data.id, name: data.name }];
     setClasses(updated);
     onSaved(updated);
     toast.success(`Class "${trimmed}" added`);
