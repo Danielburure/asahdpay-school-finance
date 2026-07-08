@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as FeaturesRouteImport } from './routes/features'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -31,11 +30,6 @@ import { Route as DashboardBillingRouteImport } from './routes/dashboard.billing
 import { Route as DashboardAuditRouteImport } from './routes/dashboard.audit'
 import { Route as DashboardStudentsIdRouteImport } from './routes/dashboard.students.$id'
 
-const PricingRoute = PricingRouteImport.update({
-  id: '/pricing',
-  path: '/pricing',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const FeaturesRoute = FeaturesRouteImport.update({
   id: '/features',
   path: '/features',
@@ -144,7 +138,6 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/features': typeof FeaturesRoute
-  '/pricing': typeof PricingRoute
   '/dashboard/audit': typeof DashboardAuditRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/fees': typeof DashboardFeesRoute
@@ -166,7 +159,6 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/features': typeof FeaturesRoute
-  '/pricing': typeof PricingRoute
   '/dashboard/audit': typeof DashboardAuditRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/fees': typeof DashboardFeesRoute
@@ -190,7 +182,6 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/features': typeof FeaturesRoute
-  '/pricing': typeof PricingRoute
   '/dashboard/audit': typeof DashboardAuditRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/fees': typeof DashboardFeesRoute
@@ -215,7 +206,6 @@ export interface FileRouteTypes {
     | '/contact'
     | '/dashboard'
     | '/features'
-    | '/pricing'
     | '/dashboard/audit'
     | '/dashboard/billing'
     | '/dashboard/fees'
@@ -237,7 +227,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contact'
     | '/features'
-    | '/pricing'
     | '/dashboard/audit'
     | '/dashboard/billing'
     | '/dashboard/fees'
@@ -260,7 +249,6 @@ export interface FileRouteTypes {
     | '/contact'
     | '/dashboard'
     | '/features'
-    | '/pricing'
     | '/dashboard/audit'
     | '/dashboard/billing'
     | '/dashboard/fees'
@@ -284,18 +272,10 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   FeaturesRoute: typeof FeaturesRoute
-  PricingRoute: typeof PricingRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/pricing': {
-      id: '/pricing'
-      path: '/pricing'
-      fullPath: '/pricing'
-      preLoaderRoute: typeof PricingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/features': {
       id: '/features'
       path: '/features'
@@ -493,7 +473,6 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   DashboardRoute: DashboardRouteWithChildren,
   FeaturesRoute: FeaturesRoute,
-  PricingRoute: PricingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
