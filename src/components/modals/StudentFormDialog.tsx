@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useStore } from "@/lib/store";
 import { KES } from "@/lib/format";
 
 type Props = {
@@ -20,8 +19,6 @@ type Props = {
 
 export function StudentFormDialog({ open, onOpenChange, student, classes, schoolId, onSaved }: Props) {
   const editing = !!student;
-  const classFees = useStore((s) => s.classFees);
-  const currentTerm = useStore((s) => s.currentTerm);
 
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
@@ -30,6 +27,12 @@ export function StudentFormDialog({ open, onOpenChange, student, classes, school
   const [parentName, setParentName] = useState("");
   const [parentPhone, setParentPhone] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Real fee lookup from fee_structures (replaces the old local Zustand
+  // classFees store), scoped to the school's current term/year.
+  const [termFee, setTermFee] = useState<number | null>(null);
+  const [termLabel, setTermLabel] = useState("");
+  const [feeLoading, setFeeLoading] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -42,12 +45,46 @@ export function StudentFormDialog({ open, onOpenChange, student, classes, school
     }
   }, [open, student]);
 
+  useEffect(() => {
+    if (!classId || !schoolId) {
+      setTermFee(null);
+      return;
+    }
+    let cancelled = false;
+    setFeeLoading(true);
+    (async () => {
+      const { data: school } = await supabase
+        .from("schools")
+        .select("current_term, academic_year")
+        .eq("id", schoolId)
+        .single();
+
+      if (!school || cancelled) return;
+
+      const labelMap: Record<string, string> = { term1: "Term 1", term2: "Term 2", term3: "Term 3" };
+      setTermLabel(labelMap[school.current_term] ?? school.current_term);
+
+      const { data: fee } = await supabase
+        .from("fee_structures")
+        .select("amount")
+        .eq("class_id", classId)
+        .eq("term", school.current_term)
+        .eq("academic_year", school.academic_year)
+        .eq("school_id", schoolId)
+        .maybeSingle();
+
+      if (!cancelled) {
+        setTermFee(fee?.amount ?? 0);
+        setFeeLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [classId, schoolId]);
+
   const selectedClassName = useMemo(
     () => classes.find((c) => c.id === classId)?.name ?? "",
     [classId, classes],
   );
-  const termFee = selectedClassName ? (classFees[selectedClassName]?.[currentTerm] ?? 0) : 0;
-  const termLabel = currentTerm === "term1" ? "Term 1" : currentTerm === "term2" ? "Term 2" : "Term 3";
 
   async function submit() {
     const e: Record<string, string> = {};
@@ -63,42 +100,28 @@ export function StudentFormDialog({ open, onOpenChange, student, classes, school
     setLoading(true);
     try {
       if (editing && student) {
-        const { error } = await supabase
-          .from("students")
-          .update({
-            full_name: name,
-            admission_number: admission,
-            class_id: classId,
-            parent_name: parentName,
-            parent_phone: parentPhone,
-            term_fee: termFee,
-          })
-          .eq("id", student.id);
+        const { error } = await supabase.rpc("correct_student", {
+          p_student_id: student.id,
+          p_school_id: schoolId,
+          p_full_name: name,
+          p_class_id: classId,
+          p_parent_name: parentName,
+          p_parent_phone: parentPhone,
+        });
         if (error) throw error;
         toast.success("Student updated");
       } else {
-        const { data: existing } = await supabase
-          .from("students")
-          .select("id")
-          .eq("school_id", schoolId)
-          .eq("admission_number", admission)
-          .maybeSingle();
-        if (existing) throw new Error("Admission number already exists");
-
-        const { error } = await supabase.from("students").insert({
-          school_id: schoolId,
-          full_name: name,
-          admission_number: admission,
-          class_id: classId,
-          parent_name: parentName,
-          parent_phone: parentPhone,
-          term_fee: termFee,
-          total_paid: 0,
-          status: "active",
+        const { error } = await supabase.rpc("enroll_student", {
+          p_school_id: schoolId,
+          p_full_name: name,
+          p_admission_number: admission,
+          p_class_id: classId,
+          p_parent_name: parentName,
+          p_parent_phone: parentPhone,
         });
         if (error) {
-          console.error("student insert error", error);
-          throw new Error(error.message + (error.details ? ` — ${error.details}` : ""));
+          console.error("enroll_student error", error);
+          throw new Error(error.message);
         }
         toast.success("Student added successfully");
       }
@@ -152,12 +175,18 @@ export function StudentFormDialog({ open, onOpenChange, student, classes, school
           </div>
           {classId && (
             <div className="rounded-md border bg-muted/40 p-3 text-sm">
-              <span className="text-muted-foreground">{termLabel} fee (from Fees Structure): </span>
-              <span className="font-semibold">{KES(termFee)}</span>
-              {termFee === 0 && (
-                <p className="text-xs text-destructive mt-1">
-                  No fee set for this class. Go to Settings → Fees Structure to add one.
-                </p>
+              {feeLoading ? (
+                <span className="text-muted-foreground">Looking up fee…</span>
+              ) : (
+                <>
+                  <span className="text-muted-foreground">{termLabel} fee (from Fees Structure): </span>
+                  <span className="font-semibold">{KES(termFee ?? 0)}</span>
+                  {termFee === 0 && (
+                    <p className="text-xs text-destructive mt-1">
+                      No fee set for {selectedClassName} this term. Go to Settings → Fees Structure to add one.
+                    </p>
+                  )}
+                </>
               )}
             </div>
           )}
