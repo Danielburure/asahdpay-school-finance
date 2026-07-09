@@ -28,8 +28,6 @@ export function StudentFormDialog({ open, onOpenChange, student, classes, school
   const [parentPhone, setParentPhone] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Real fee lookup from fee_structures (replaces the old local Zustand
-  // classFees store), scoped to the school's current term/year.
   const [termFee, setTermFee] = useState<number | null>(null);
   const [termLabel, setTermLabel] = useState("");
   const [feeLoading, setFeeLoading] = useState(false);
@@ -48,34 +46,41 @@ export function StudentFormDialog({ open, onOpenChange, student, classes, school
   useEffect(() => {
     if (!classId || !schoolId) {
       setTermFee(null);
+      setFeeLoading(false);
       return;
     }
     let cancelled = false;
     setFeeLoading(true);
     (async () => {
-      const { data: school } = await supabase
-        .from("schools")
-        .select("current_term, academic_year")
-        .eq("id", schoolId)
-        .single();
+      try {
+        const { data: school, error: schoolErr } = await supabase
+          .from("schools")
+          .select("current_term, academic_year")
+          .eq("id", schoolId)
+          .single();
 
-      if (!school || cancelled) return;
+        if (schoolErr) throw schoolErr;
+        if (!school || cancelled) return;
 
-      const labelMap: Record<string, string> = { term1: "Term 1", term2: "Term 2", term3: "Term 3" };
-      setTermLabel(labelMap[school.current_term] ?? school.current_term);
+        const labelMap: Record<string, string> = { term1: "Term 1", term2: "Term 2", term3: "Term 3" };
+        setTermLabel(labelMap[school.current_term] ?? school.current_term);
 
-      const { data: fee } = await supabase
-        .from("fee_structures")
-        .select("amount")
-        .eq("class_id", classId)
-        .eq("term", school.current_term)
-        .eq("academic_year", school.academic_year)
-        .eq("school_id", schoolId)
-        .maybeSingle();
+        const { data: fee, error: feeErr } = await supabase
+          .from("fee_structures")
+          .select("amount")
+          .eq("class_id", classId)
+          .eq("term", school.current_term)
+          .eq("academic_year", school.academic_year)
+          .eq("school_id", schoolId)
+          .maybeSingle();
 
-      if (!cancelled) {
-        setTermFee(fee?.amount ?? 0);
-        setFeeLoading(false);
+        if (feeErr) throw feeErr;
+        if (!cancelled) setTermFee(fee?.amount ?? 0);
+      } catch (err) {
+        console.error("fee lookup failed", err);
+        if (!cancelled) setTermFee(0);
+      } finally {
+        if (!cancelled) setFeeLoading(false);
       }
     })();
     return () => { cancelled = true; };
